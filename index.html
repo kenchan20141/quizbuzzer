@@ -1,394 +1,914 @@
+
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>線上搶答器系統</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <title>多設備搶答系統</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a4c 0%, #0d1b2a 100%);
+            color: #e0e1dd;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            background: rgba(26, 35, 53, 0.85);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 90vh;
+        }
+        
+        header {
+            background: rgba(13, 27, 42, 0.9);
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(64, 121, 140, 0.3);
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, #ff9a9e, #fad0c4);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .subtitle {
+            color: #778da9;
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+        }
+        
+        .content {
+            display: flex;
+            flex: 1;
+            padding: 20px;
+            gap: 20px;
+        }
+        
+        .panel {
+            background: rgba(23, 42, 58, 0.7);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .host-panel {
+            flex: 2;
+            background: rgba(23, 42, 58, 0.8);
+        }
+        
+        .panel-title {
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            color: #f8f9fa;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(64, 121, 140, 0.5);
+        }
+        
+        .panel-title i {
+            color: #4cc9f0;
+        }
+        
+        .login-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            max-width: 500px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        label {
+            font-size: 1.1rem;
+            color: #a8dadc;
+        }
+        
+        input, select {
+            padding: 14px 18px;
+            border-radius: 10px;
+            border: 1px solid #415a77;
+            background: rgba(26, 35, 53, 0.6);
+            color: #f1faee;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #4cc9f0;
+            box-shadow: 0 0 0 3px rgba(76, 201, 240, 0.3);
+        }
+        
+        .btn {
+            padding: 15px 25px;
+            border-radius: 10px;
+            border: none;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
+            color: white;
+            box-shadow: 0 4px 10px rgba(67, 97, 238, 0.3);
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #3a56d4 0%, #2f0a8a 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(67, 97, 238, 0.4);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #f72585 0%, #b5179e 100%);
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: linear-gradient(135deg, #e01e77 0%, #9c1487 100%);
+            transform: translateY(-2px);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #4cc9f0 0%, #3a86ff 100%);
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: linear-gradient(135deg, #3fb8e0 0%, #2a75e6 100%);
+            transform: translateY(-2px);
+        }
+        
+        .player-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .player-card {
+            background: rgba(31, 54, 77, 0.7);
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .player-card.active {
+            border-color: #4cc9f0;
+            background: rgba(31, 54, 77, 0.9);
+            transform: scale(1.02);
+            box-shadow: 0 5px 15px rgba(76, 201, 240, 0.2);
+        }
+        
+        .player-card.answered {
+            border-color: #f72585;
+            background: rgba(31, 54, 77, 0.9);
+        }
+        
+        .player-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .player-info {
+            flex: 1;
+        }
+        
+        .player-name {
+            font-weight: 600;
+            font-size: 1.2rem;
+            margin-bottom: 5px;
+        }
+        
+        .player-status {
+            font-size: 0.9rem;
+            color: #778da9;
+        }
+        
+        .buzzer-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 30px;
+        }
+        
+        .buzzer-btn {
+            width: 250px;
+            height: 250px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #f72585 0%, #7209b7 100%);
+            border: none;
+            color: white;
+            font-size: 2.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 30px rgba(247, 37, 133, 0.3);
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .buzzer-btn:before {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: rgba(255, 255, 255, 0.1);
+            transform: rotate(30deg);
+            transition: all 0.5s ease;
+        }
+        
+        .buzzer-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 15px 40px rgba(247, 37, 133, 0.5);
+        }
+        
+        .buzzer-btn:active {
+            transform: scale(0.98);
+            box-shadow: 0 5px 20px rgba(247, 37, 133, 0.2);
+        }
+        
+        .buzzer-btn:disabled {
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+            cursor: not-allowed;
+            transform: scale(1);
+            box-shadow: none;
+        }
+        
+        .buzzer-text {
+            font-size: 1.8rem;
+            margin-top: 10px;
+        }
+        
+        .winner-display {
+            background: rgba(31, 54, 77, 0.9);
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 20px;
+            text-align: center;
+            border: 3px solid #4cc9f0;
+            box-shadow: 0 5px 20px rgba(76, 201, 240, 0.3);
+        }
+        
+        .winner-title {
+            font-size: 1.5rem;
+            color: #4cc9f0;
+            margin-bottom: 15px;
+        }
+        
+        .winner-name {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #f72585;
+            background: linear-gradient(to right, #ff9a9e, #fad0c4);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin: 10px 0;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 20px;
+            border-radius: 30px;
+            background: rgba(31, 54, 77, 0.7);
+            margin-top: 20px;
+        }
+        
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #e63946;
+        }
+        
+        .status-dot.connected {
+            background: #2a9d8f;
+        }
+        
+        .room-info {
+            background: rgba(31, 54, 77, 0.7);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .info-item {
+            text-align: center;
+        }
+        
+        .info-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #4cc9f0;
+        }
+        
+        .info-label {
+            color: #778da9;
+            font-size: 0.9rem;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .connection-count {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            color: #778da9;
+            font-size: 1.1rem;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 900px) {
+            .content {
+                flex-direction: column;
+            }
+            
+            .buzzer-btn {
+                width: 200px;
+                height: 200px;
+            }
+            
+            .player-list {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            }
+        }
+        
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .panel {
+                padding: 15px;
+            }
+            
+            .buzzer-btn {
+                width: 180px;
+                height: 180px;
+                font-size: 2rem;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            .player-list {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
-    <!-- 首頁選擇 -->
-    <div id="homePage" class="container mx-auto px-4 py-8 max-w-md">
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <h1 class="text-2xl font-bold text-gray-800 text-center mb-6">
-                <i class="fas fa-hand-paper text-blue-600 mr-2"></i>
-                線上搶答器
-            </h1>
-            
-            <div class="space-y-4">
-                <button onclick="showHostPage()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg transition duration-200">
-                    <i class="fas fa-crown mr-2"></i>
-                    我是主持人
-                </button>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-trophy"></i> 多設備搶答系統</h1>
+            <p class="subtitle">主持人可在大螢幕監控，參與者使用個人設備搶答</p>
+            <div class="connection-count">
+                <i class="fas fa-users"></i>
+                <span id="connectionCount">0</span> 個設備已連接
+            </div>
+        </header>
+        
+        <div class="content">
+            <!-- 主持人面板 -->
+            <div class="panel host-panel" id="hostPanel">
+                <h2 class="panel-title"><i class="fas fa-desktop"></i> 主持人控制台</h2>
                 
-                <button onclick="showParticipantPage()" class="w-full bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-lg transition duration-200">
-                    <i class="fas fa-users mr-2"></i>
-                    我是參與者
-                </button>
+                <div class="login-section" id="hostLogin">
+                    <div class="input-group">
+                        <label for="hostRoomCode"><i class="fas fa-door-open"></i> 房間號碼</label>
+                        <input type="text" id="hostRoomCode" placeholder="輸入房間號碼">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="hostName"><i class="fas fa-user"></i> 主持人名稱</label>
+                        <input type="text" id="hostName" placeholder="輸入你的名稱">
+                    </div>
+                    
+                    <button class="btn btn-primary" id="hostConnectBtn">
+                        <i class="fas fa-plug"></i> 建立房間
+                    </button>
+                </div>
+                
+                <div class="host-view hidden" id="hostView">
+                    <div class="room-info">
+                        <div class="info-item">
+                            <div class="info-value" id="roomCodeDisplay">-</div>
+                            <div class="info-label">房間號碼</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-value" id="playerCount">0</div>
+                            <div class="info-label">參與人數</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-value" id="buzzerStatus">關閉</div>
+                            <div class="info-label">搶答狀態</div>
+                        </div>
+                    </div>
+                    
+                    <h3><i class="fas fa-users"></i> 已連接玩家</h3>
+                    <div class="player-list" id="playerList">
+                        <!-- 玩家卡片会动态添加 -->
+                    </div>
+                    
+                    <div class="winner-display hidden" id="winnerDisplay">
+                        <div class="winner-title">搶答成功者</div>
+                        <div class="winner-name" id="winnerName">-</div>
+                        <p>恭喜搶答成功！</p>
+                    </div>
+                    
+                    <div class="controls">
+                        <button class="btn btn-success" id="startBuzzerBtn">
+                            <i class="fas fa-play"></i> 開始搶答
+                        </button>
+                        <button class="btn btn-danger" id="resetBuzzerBtn">
+                            <i class="fas fa-redo"></i> 重置搶答
+                        </button>
+                    </div>
+                </div>
             </div>
             
-            <div class="mt-6 text-center text-sm text-gray-600">
-                <p>完全免費的即時搶答系統</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- 主持人頁面 -->
-    <div id="hostPage" class="hidden container mx-auto px-4 py-8 max-w-4xl">
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-gray-800">
-                    <i class="fas fa-crown text-yellow-500 mr-2"></i>
-                    主持人控制台
-                </h2>
-                <button onclick="showHomePage()" class="text-gray-500 hover:text-gray-700">
-                    <i class="fas fa-home text-xl"></i>
-                </button>
-            </div>
-
-            <!-- 房間設置 -->
-            <div id="roomSetup" class="mb-6">
-                <div class="flex space-x-4">
-                    <input type="text" id="roomName" placeholder="輸入房間名稱" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg">
-                    <button onclick="createRoom()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg">
-                        創建房間
+            <!-- 参与者面板 -->
+            <div class="panel" id="playerPanel">
+                <h2 class="panel-title"><i class="fas fa-mobile-alt"></i> 參與者面板</h2>
+                
+                <div class="login-section" id="playerLogin">
+                    <div class="input-group">
+                        <label for="playerRoomCode"><i class="fas fa-door-open"></i> 房間號碼</label>
+                        <input type="text" id="playerRoomCode" placeholder="輸入房間號碼">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="playerName"><i class="fas fa-user"></i> 你的名稱</label>
+                        <input type="text" id="playerName" placeholder="輸入你的名稱">
+                    </div>
+                    
+                    <button class="btn btn-primary" id="playerConnectBtn">
+                        <i class="fas fa-sign-in-alt"></i> 加入房間
                     </button>
                 </div>
-            </div>
-
-            <!-- 房間資訊 -->
-            <div id="roomInfo" class="hidden mb-6 p-4 bg-blue-50 rounded-lg">
-                <div class="flex justify-between items-center">
-                    <div>
-                        <span class="text-sm text-gray-600">房間代碼：</span>
-                        <span id="roomCode" class="font-mono text-lg font-bold text-blue-600"></span>
-                    </div>
-                    <button onclick="resetBuzzer()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg">
-                        重置搶答
-                    </button>
-                </div>
-            </div>
-
-            <!-- 參與者列表 -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="bg-gray-50 rounded-lg p-4">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-3">
-                        <i class="fas fa-users mr-2"></i>
-                        已連接參與者 (<span id="participantCount">0</span>)
-                    </h3>
-                    <div id="participantsList" class="space-y-2 max-h-64 overflow-y-auto">
-                        <p class="text-gray-500 text-center py-4">等待參與者加入...</p>
-                    </div>
-                </div>
-
-                <!-- 搶答結果 -->
-                <div class="bg-gray-50 rounded-lg p-4">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-3">
-                        <i class="fas fa-trophy mr-2"></i>
-                        搶答結果
-                    </h3>
-                    <div id="buzzerResult" class="text-center py-8">
-                        <i class="fas fa-clock text-gray-400 text-4xl mb-2"></i>
-                        <p class="text-gray-500">等待搶答...</p>
+                
+                <div class="player-view hidden" id="playerView">
+                    <div class="buzzer-section">
+                        <div class="status-indicator">
+                            <div class="status-dot" id="playerStatusDot"></div>
+                            <span id="playerStatusText">等待連接...</span>
+                        </div>
+                        
+                        <button class="buzzer-btn" id="buzzerBtn" disabled>
+                            <i class="fas fa-bell"></i>
+                            <div class="buzzer-text">搶答</div>
+                        </button>
+                        
+                        <div class="room-info">
+                            <div class="info-item">
+                                <div class="info-value" id="playerRoomCodeDisplay">-</div>
+                                <div class="info-label">房間號碼</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-value" id="playerNameDisplay">-</div>
+                                <div class="info-label">你的名稱</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-
-    <!-- 參與者頁面 -->
-    <div id="participantPage" class="hidden container mx-auto px-4 py-8 max-w-md">
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-gray-800">
-                    <i class="fas fa-hand-paper text-green-600 mr-2"></i>
-                    參與搶答
-                </h2>
-                <button onclick="showHomePage()" class="text-gray-500 hover:text-gray-700">
-                    <i class="fas fa-home text-xl"></i>
-                </button>
-            </div>
-
-            <!-- 加入房間 -->
-            <div id="joinRoom">
-                <div class="space-y-4 mb-6">
-                    <input type="text" id="participantName" placeholder="輸入您的姓名" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
-                    <input type="text" id="roomCodeInput" placeholder="輸入房間代碼" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
-                    <button onclick="joinRoom()" class="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg">
-                        加入房間
-                    </button>
-                </div>
-            </div>
-
-            <!-- 搶答界面 -->
-            <div id="buzzerInterface" class="hidden text-center">
-                <div class="mb-4">
-                    <p class="text-sm text-gray-600">房間：<span id="currentRoom" class="font-mono"></span></p>
-                    <p class="text-sm text-gray-600">姓名：<span id="currentName"></span></p>
-                </div>
-
-                <button id="buzzerButton" onclick="buzz()" class="w-48 h-48 bg-red-500 hover:bg-red-600 text-white rounded-full text-2xl font-bold shadow-lg transform transition duration-200 hover:scale-105 mx-auto block">
-                    <i class="fas fa-hand-paper text-4xl"></i>
-                    <div class="mt-2">搶答</div>
-                </button>
-
-                <div id="buzzerStatus" class="mt-6 p-4 rounded-lg">
-                    <p class="text-gray-600">準備搶答...</p>
-                </div>
-
-                <button onclick="leaveRoom()" class="mt-4 text-gray-500 hover:text-gray-700 text-sm">
-                    離開房間
-                </button>
-            </div>
-        </div>
-    </div>
-
+    
     <script>
-        // Firebase 配置 (使用演示配置，實際使用需要替換)
+        // Firebase配置 - 使用免费账户
         const firebaseConfig = {
-            apiKey: "demo-api-key",
-            authDomain: "demo-project.firebaseapp.com",
-            databaseURL: "https://demo-project-default-rtdb.firebaseio.com/",
-            projectId: "demo-project"
+           apiKey: "AIzaSyAGSmNK1zBmXUM9aa81gCfb15sTA6rXsYE",
+  authDomain: "quizbuzzer-64e02.firebaseapp.com",
+  databaseURL: "https://quizbuzzer-64e02-default-rtdb.firebaseio.com",
+  projectId: "quizbuzzer-64e02",
+  storageBucket: "quizbuzzer-64e02.firebasestorage.app",
+  messagingSenderId: "865117556536",
+  appId: "1:865117556536:web:1bc501a4b5788f011b3bcd"
         };
-
-        // 由於這是演示版本，我們使用本地存儲模擬Firebase
+        
+        // 初始化Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        
+        // DOM元素
+        const elements = {
+            // 主持人元素
+            hostPanel: document.getElementById('hostPanel'),
+            hostLogin: document.getElementById('hostLogin'),
+            hostView: document.getElementById('hostView'),
+            hostRoomCode: document.getElementById('hostRoomCode'),
+            hostName: document.getElementById('hostName'),
+            hostConnectBtn: document.getElementById('hostConnectBtn'),
+            roomCodeDisplay: document.getElementById('roomCodeDisplay'),
+            playerCount: document.getElementById('playerCount'),
+            buzzerStatus: document.getElementById('buzzerStatus'),
+            playerList: document.getElementById('playerList'),
+            winnerDisplay: document.getElementById('winnerDisplay'),
+            winnerName: document.getElementById('winnerName'),
+            startBuzzerBtn: document.getElementById('startBuzzerBtn'),
+            resetBuzzerBtn: document.getElementById('resetBuzzerBtn'),
+            
+            // 参与者元素
+            playerPanel: document.getElementById('playerPanel'),
+            playerLogin: document.getElementById('playerLogin'),
+            playerView: document.getElementById('playerView'),
+            playerRoomCode: document.getElementById('playerRoomCode'),
+            playerName: document.getElementById('playerName'),
+            playerConnectBtn: document.getElementById('playerConnectBtn'),
+            playerStatusDot: document.getElementById('playerStatusDot'),
+            playerStatusText: document.getElementById('playerStatusText'),
+            buzzerBtn: document.getElementById('buzzerBtn'),
+            playerRoomCodeDisplay: document.getElementById('playerRoomCodeDisplay'),
+            playerNameDisplay: document.getElementById('playerNameDisplay'),
+            
+            // 其他元素
+            connectionCount: document.getElementById('connectionCount')
+        };
+        
+        // 全局变量
+        let currentUser = null;
         let currentRoom = null;
         let isHost = false;
-        let participantName = '';
-        let buzzerActive = true;
-
-        // 模擬數據存儲
-        let rooms = {};
-
-        function showHomePage() {
-            document.getElementById('homePage').classList.remove('hidden');
-            document.getElementById('hostPage').classList.add('hidden');
-            document.getElementById('participantPage').classList.add('hidden');
-            resetState();
-        }
-
-        function showHostPage() {
-            document.getElementById('homePage').classList.add('hidden');
-            document.getElementById('hostPage').classList.remove('hidden');
-            document.getElementById('participantPage').classList.add('hidden');
-            isHost = true;
-        }
-
-        function showParticipantPage() {
-            document.getElementById('homePage').classList.add('hidden');
-            document.getElementById('hostPage').classList.add('hidden');
-            document.getElementById('participantPage').classList.remove('hidden');
-            isHost = false;
-        }
-
-        function resetState() {
-            currentRoom = null;
-            isHost = false;
-            participantName = '';
-            buzzerActive = true;
-        }
-
+        let players = {};
+        let connectionCount = 0;
+        
+        // 生成随机房间号
         function generateRoomCode() {
-            return Math.random().toString(36).substring(2, 8).toUpperCase();
-        }
-
-        function createRoom() {
-            const roomName = document.getElementById('roomName').value.trim();
-            if (!roomName) {
-                alert('請輸入房間名稱');
-                return;
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            let code = '';
+            for (let i = 0; i < 4; i++) {
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
             }
-
-            currentRoom = generateRoomCode();
-            rooms[currentRoom] = {
-                name: roomName,
-                participants: {},
-                buzzerResult: null,
-                buzzerActive: true
-            };
-
-            document.getElementById('roomCode').textContent = currentRoom;
-            document.getElementById('roomInfo').classList.remove('hidden');
+            return code;
+        }
+        
+        // 初始化
+        function init() {
+            // 自动生成房间号
+            elements.hostRoomCode.value = generateRoomCode();
+            elements.playerRoomCode.value = elements.hostRoomCode.value;
             
-            // 開始監聽房間變化
-            startRoomMonitoring();
+            // 添加事件监听器
+            elements.hostConnectBtn.addEventListener('click', hostConnect);
+            elements.playerConnectBtn.addEventListener('click', playerConnect);
+            elements.startBuzzerBtn.addEventListener('click', startBuzzer);
+            elements.resetBuzzerBtn.addEventListener('click', resetBuzzer);
+            elements.buzzerBtn.addEventListener('click', buzz);
+            
+            // 初始化连接计数
+            updateConnectionCount();
         }
-
-        function joinRoom() {
-            const name = document.getElementById('participantName').value.trim();
-            const roomCode = document.getElementById('roomCodeInput').value.trim().toUpperCase();
-
-            if (!name || !roomCode) {
-                alert('請輸入姓名和房間代碼');
+        
+        // 主持人连接
+        function hostConnect() {
+            const roomCode = elements.hostRoomCode.value.trim().toUpperCase();
+            const name = elements.hostName.value.trim();
+            
+            if (!roomCode) {
+                alert('請輸入房間號碼');
                 return;
             }
-
-            if (!rooms[roomCode]) {
-                alert('房間不存在');
+            
+            if (!name) {
+                alert('請輸入主持人名稱');
                 return;
             }
-
-            participantName = name;
-            currentRoom = roomCode;
-
-            // 加入房間
-            rooms[currentRoom].participants[name] = {
+            
+            currentUser = {
+                id: 'host_' + Date.now(),
                 name: name,
-                joinTime: Date.now()
+                role: 'host'
             };
-
-            document.getElementById('currentRoom').textContent = currentRoom;
-            document.getElementById('currentName').textContent = name;
-            document.getElementById('joinRoom').classList.add('hidden');
-            document.getElementById('buzzerInterface').classList.remove('hidden');
-
-            // 觸發主持人界面更新
-            if (typeof updateParticipantsList === 'function') {
-                updateParticipantsList();
-            }
-        }
-
-        function leaveRoom() {
-            if (currentRoom && participantName) {
-                delete rooms[currentRoom].participants[participantName];
-            }
             
-            document.getElementById('joinRoom').classList.remove('hidden');
-            document.getElementById('buzzerInterface').classList.add('hidden');
+            currentRoom = roomCode;
+            isHost = true;
             
-            // 清空輸入框
-            document.getElementById('participantName').value = '';
-            document.getElementById('roomCodeInput').value = '';
+            // 显示主持人视图
+            elements.hostLogin.classList.add('hidden');
+            elements.hostView.classList.remove('hidden');
+            elements.roomCodeDisplay.textContent = roomCode;
+            
+            // 初始化房间
+            initRoom();
         }
-
-        function buzz() {
-            if (!buzzerActive || !currentRoom) return;
-
-            const room = rooms[currentRoom];
-            if (!room.buzzerActive) {
-                document.getElementById('buzzerStatus').innerHTML = 
-                    '<p class="text-red-600">搶答已結束</p>';
+        
+        // 参与者连接
+        function playerConnect() {
+            const roomCode = elements.playerRoomCode.value.trim().toUpperCase();
+            const name = elements.playerName.value.trim();
+            
+            if (!roomCode) {
+                alert('請輸入房間號碼');
                 return;
             }
-
-            // 記錄搶答結果
-            room.buzzerResult = {
-                name: participantName,
-                time: Date.now()
+            
+            if (!name) {
+                alert('請輸入你的名稱');
+                return;
+            }
+            
+            currentUser = {
+                id: 'player_' + Date.now(),
+                name: name,
+                role: 'player',
+                buzzed: false
             };
-            room.buzzerActive = false;
-
-            // 更新按鈕狀態
-            document.getElementById('buzzerButton').classList.add('opacity-50');
-            document.getElementById('buzzerButton').disabled = true;
-            document.getElementById('buzzerStatus').innerHTML = 
-                '<p class="text-green-600 font-bold">搶答成功！</p>';
-
-            // 更新主持人界面
-            updateBuzzerResult();
+            
+            currentRoom = roomCode;
+            isHost = false;
+            
+            // 显示参与者视图
+            elements.playerLogin.classList.add('hidden');
+            elements.playerView.classList.remove('hidden');
+            elements.playerRoomCodeDisplay.textContent = roomCode;
+            elements.playerNameDisplay.textContent = name;
+            
+            // 设置状态为已连接
+            updatePlayerStatus('已連接房間', true);
+            
+            // 加入房间
+            joinRoom();
         }
-
-        function resetBuzzer() {
-            if (!currentRoom) return;
-
-            const room = rooms[currentRoom];
-            room.buzzerResult = null;
-            room.buzzerActive = true;
-
-            // 重置搶答界面
-            document.getElementById('buzzerResult').innerHTML = `
-                <i class="fas fa-clock text-gray-400 text-4xl mb-2"></i>
-                <p class="text-gray-500">等待搶答...</p>
-            `;
-
-            // 通知所有參與者重置
-            buzzerActive = true;
-            const buzzerButton = document.getElementById('buzzerButton');
-            if (buzzerButton) {
-                buzzerButton.classList.remove('opacity-50');
-                buzzerButton.disabled = false;
-            }
-            const buzzerStatus = document.getElementById('buzzerStatus');
-            if (buzzerStatus) {
-                buzzerStatus.innerHTML = '<p class="text-gray-600">準備搶答...</p>';
-            }
-        }
-
-        function startRoomMonitoring() {
-            // 模擬即時更新
-            setInterval(() => {
-                if (isHost && currentRoom) {
-                    updateParticipantsList();
-                    updateBuzzerResult();
+        
+        // 初始化房间
+        function initRoom() {
+            const roomRef = database.ref('rooms/' + currentRoom);
+            
+            // 设置房间状态
+            roomRef.set({
+                status: 'waiting',
+                host: currentUser.name,
+                players: {},
+                buzzerEnabled: false,
+                winner: null
+            });
+            
+            // 监听玩家加入
+            roomRef.child('players').on('child_added', (snapshot) => {
+                const player = snapshot.val();
+                players[snapshot.key] = player;
+                updatePlayerList();
+            });
+            
+            // 监听玩家离开
+            roomRef.child('players').on('child_removed', (snapshot) => {
+                delete players[snapshot.key];
+                updatePlayerList();
+            });
+            
+            // 监听抢答状态变化
+            roomRef.child('buzzerEnabled').on('value', (snapshot) => {
+                const enabled = snapshot.val();
+                elements.buzzerStatus.textContent = enabled ? '開啟' : '關閉';
+                elements.buzzerStatus.style.color = enabled ? '#4cc9f0' : '#e63946';
+            });
+            
+            // 监听获胜者变化
+            roomRef.child('winner').on('value', (snapshot) => {
+                const winner = snapshot.val();
+                if (winner) {
+                    elements.winnerName.textContent = winner.name;
+                    elements.winnerDisplay.classList.remove('hidden');
+                } else {
+                    elements.winnerDisplay.classList.add('hidden');
                 }
-            }, 1000);
+            });
+            
+            // 更新连接计数
+            updateConnectionCount();
         }
-
-        function updateParticipantsList() {
-            if (!currentRoom || !rooms[currentRoom]) return;
-
-            const participants = rooms[currentRoom].participants;
-            const participantsList = document.getElementById('participantsList');
-            const participantCount = document.getElementById('participantCount');
-
-            const count = Object.keys(participants).length;
-            participantCount.textContent = count;
-
-            if (count === 0) {
-                participantsList.innerHTML = '<p class="text-gray-500 text-center py-4">等待參與者加入...</p>';
-                return;
-            }
-
-            const participantsHTML = Object.values(participants).map(participant => `
-                <div class="flex items-center justify-between bg-white p-3 rounded-lg">
-                    <div class="flex items-center">
-                        <i class="fas fa-user text-green-600 mr-2"></i>
-                        <span class="font-medium">${participant.name}</span>
-                    </div>
-                    <span class="text-xs text-gray-500">
-                        ${new Date(participant.joinTime).toLocaleTimeString()}
-                    </span>
-                </div>
-            `).join('');
-
-            participantsList.innerHTML = participantsHTML;
+        
+        // 加入房间
+        function joinRoom() {
+            const playerRef = database.ref('rooms/' + currentRoom + '/players/' + currentUser.id);
+            
+            // 添加玩家到房间
+            playerRef.set({
+                name: currentUser.name,
+                buzzed: false
+            });
+            
+            // 监听房间状态
+            const roomRef = database.ref('rooms/' + currentRoom);
+            roomRef.on('value', (snapshot) => {
+                const room = snapshot.val();
+                
+                if (!room) {
+                    updatePlayerStatus('房間不存在', false);
+                    elements.buzzerBtn.disabled = true;
+                    return;
+                }
+                
+                // 更新抢答按钮状态
+                elements.buzzerBtn.disabled = !room.buzzerEnabled;
+                
+                if (room.buzzerEnabled) {
+                    updatePlayerStatus('搶答已開啟，準備搶答', true);
+                } else {
+                    updatePlayerStatus('搶答未開啟，等待主持人', true);
+                }
+                
+                // 检查是否已抢答
+                if (room.players && room.players[currentUser.id] && room.players[currentUser.id].buzzed) {
+                    elements.buzzerBtn.disabled = true;
+                    updatePlayerStatus('你已搶答，等待結果', true);
+                }
+            });
+            
+            // 当页面关闭时移除玩家
+            window.addEventListener('beforeunload', () => {
+                playerRef.remove();
+            });
+            
+            // 更新连接计数
+            updateConnectionCount();
         }
-
-        function updateBuzzerResult() {
-            if (!currentRoom || !rooms[currentRoom]) return;
-
-            const result = rooms[currentRoom].buzzerResult;
-            const buzzerResultDiv = document.getElementById('buzzerResult');
-
-            if (result) {
-                buzzerResultDiv.innerHTML = `
-                    <div class="text-center">
-                        <i class="fas fa-trophy text-yellow-500 text-4xl mb-2"></i>
-                        <h4 class="text-xl font-bold text-green-600 mb-1">搶答成功！</h4>
-                        <p class="text-lg font-semibold">${result.name}</p>
-                        <p class="text-sm text-gray-500">${new Date(result.time).toLocaleTimeString()}</p>
+        
+        // 更新玩家列表
+        function updatePlayerList() {
+            elements.playerList.innerHTML = '';
+            let count = 0;
+            
+            for (const playerId in players) {
+                const player = players[playerId];
+                count++;
+                
+                const playerCard = document.createElement('div');
+                playerCard.className = 'player-card';
+                if (player.buzzed) {
+                    playerCard.classList.add('answered');
+                }
+                
+                playerCard.innerHTML = `
+                    <div class="player-avatar">${player.name.charAt(0)}</div>
+                    <div class="player-info">
+                        <div class="player-name">${player.name}</div>
+                        <div class="player-status">${player.buzzed ? '已搶答' : '等待中'}</div>
                     </div>
                 `;
+                
+                elements.playerList.appendChild(playerCard);
+            }
+            
+            elements.playerCount.textContent = count;
+        }
+        
+        // 更新玩家状态
+        function updatePlayerStatus(text, connected) {
+            elements.playerStatusText.textContent = text;
+            if (connected) {
+                elements.playerStatusDot.classList.add('connected');
+            } else {
+                elements.playerStatusDot.classList.remove('connected');
             }
         }
-
-        // 頁面載入完成後的初始化
-        document.addEventListener('DOMContentLoaded', function() {
-            // 檢查是否有保存的狀態
-            showHomePage();
-        });
-
-        // 防止意外關閉
-        window.addEventListener('beforeunload', function(e) {
-            if (currentRoom && participantName) {
-                e.preventDefault();
-                e.returnValue = '';
-            }
-        });
+        
+        // 开始抢答
+        function startBuzzer() {
+            const roomRef = database.ref('rooms/' + currentRoom);
+            roomRef.update({
+                buzzerEnabled: true,
+                winner: null
+            });
+        }
+        
+        // 重置抢答
+        function resetBuzzer() {
+            const roomRef = database.ref('rooms/' + currentRoom);
+            
+            // 重置所有玩家的抢答状态
+            roomRef.child('players').once('value', (snapshot) => {
+                const players = snapshot.val() || {};
+                const updates = {};
+                
+                for (const playerId in players) {
+                    updates[`players/${playerId}/buzzed`] = false;
+                }
+                
+                roomRef.update({
+                    ...updates,
+                    buzzerEnabled: false,
+                    winner: null
+                });
+            });
+        }
+        
+        // 抢答
+        function buzz() {
+            if (!currentRoom || !currentUser) return;
+            
+            const playerRef = database.ref(`rooms/${currentRoom}/players/${currentUser.id}`);
+            
+            // 设置玩家已抢答
+            playerRef.update({
+                buzzed: true
+            });
+            
+            // 检查是否第一个抢答者
+            const roomRef = database.ref('rooms/' + currentRoom);
+            roomRef.transaction((room) => {
+                if (room && room.buzzerEnabled && !room.winner) {
+                    room.winner = {
+                        id: currentUser.id,
+                        name: currentUser.name
+                    };
+                }
+                return room;
+            });
+            
+            // 禁用按钮
+            elements.buzzerBtn.disabled = true;
+            updatePlayerStatus('已搶答，等待結果', true);
+        }
+        
+        // 更新连接计数
+        function updateConnectionCount() {
+            connectionCount = Object.keys(players).length + (currentUser ? 1 : 0);
+            elements.connectionCount.textContent = connectionCount;
+        }
+        
+        // 页面加载时初始化
+        window.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 </html>
