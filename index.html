@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多設備線上搶答器</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <style>
+        .buzzer-button {
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+        .buzzer-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+        }
+        .buzzer-button:active {
+            transform: translateY(0);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+        .winner-animation {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen">
+    <!-- 模式選擇頁面 -->
+    <div id="modeSelection" class="container mx-auto px-4 py-8">
+        <div class="max-w-4xl mx-auto text-center">
+            <h1 class="text-4xl md:text-6xl font-bold mb-8 text-gray-200">
+                <i class="fas fa-bolt text-yellow-400"></i>
+                線上搶答器
+            </h1>
+            
+            <div class="mb-8">
+                <label class="block text-lg mb-4 text-gray-300">房間號碼</label>
+                <input type="text" id="roomCode" class="bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-center text-xl w-48 focus:outline-none focus:border-yellow-400" placeholder="輸入房間號碼" maxlength="6">
+                <button onclick="generateRoomCode()" class="ml-2 bg-gray-700 hover:bg-gray-600 px-4 py-3 rounded-lg text-sm">
+                    <i class="fas fa-random"></i> 隨機生成
+                </button>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-8 mt-12">
+                <div class="bg-gray-800 rounded-xl p-8 border border-gray-700 hover:border-gray-600 transition-all">
+                    <i class="fas fa-tv text-5xl text-blue-400 mb-4"></i>
+                    <h2 class="text-2xl font-bold mb-4">顯示屏模式</h2>
+                    <p class="text-gray-400 mb-6">連接到大屏幕或投影機，顯示搶答結果</p>
+                    <button onclick="startDisplayMode()" class="bg-blue-600 hover:bg-blue-700 px-8 py-3 rounded-lg font-bold transition-colors">
+                        開始顯示
+                    </button>
+                </div>
+
+                <div class="bg-gray-800 rounded-xl p-8 border border-gray-700 hover:border-gray-600 transition-all">
+                    <i class="fas fa-hand-paper text-5xl text-green-400 mb-4"></i>
+                    <h2 class="text-2xl font-bold mb-4">參與者模式</h2>
+                    <p class="text-gray-400 mb-6">參與搶答，點擊按鈕搶答</p>
+                    <div class="mb-4">
+                        <input type="text" id="playerName" class="bg-gray-700 border border-gray-600 rounded px-3 py-2 w-full" placeholder="輸入您的名字">
+                    </div>
+                    <button onclick="startPlayerMode()" class="bg-green-600 hover:bg-green-700 px-8 py-3 rounded-lg font-bold transition-colors">
+                        加入搶答
+                    </button>
+                </div>
+            </div>
+
+            <div class="mt-8 text-sm text-gray-500">
+                <p><i class="fas fa-info-circle"></i> 所有設備需要連接到相同的網絡並使用相同的房間號碼</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 顯示屏模式 -->
+    <div id="displayMode" class="hidden container mx-auto px-4 py-8">
+        <div class="max-w-6xl mx-auto">
+            <div class="flex justify-between items-center mb-8">
+                <h1 class="text-3xl font-bold text-gray-200">
+                    <i class="fas fa-tv text-blue-400"></i>
+                    搶答顯示屏
+                </h1>
+                <div class="flex items-center space-x-4">
+                    <span class="text-gray-400">房間: <span id="displayRoomCode" class="text-yellow-400 font-bold"></span></span>
+                    <button onclick="resetGame()" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg text-sm">
+                        <i class="fas fa-redo"></i> 重置
+                    </button>
+                    <button onclick="backToMenu()" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg text-sm">
+                        <i class="fas fa-arrow-left"></i> 返回
+                    </button>
+                </div>
+            </div>
+
+            <div id="waitingScreen" class="text-center py-20">
+                <div class="animate-pulse">
+                    <i class="fas fa-clock text-6xl text-yellow-400 mb-8"></i>
+                    <h2 class="text-4xl font-bold mb-4">等待搶答中...</h2>
+                    <p class="text-xl text-gray-400">參與者準備就緒後，點擊搶答按鈕開始</p>
+                </div>
+                <div class="mt-8">
+                    <p class="text-lg text-gray-500">已連接參與者: <span id="connectedCount" class="text-green-400 font-bold">0</span></p>
+                </div>
+            </div>
+
+            <div id="resultScreen" class="hidden text-center py-20">
+                <div class="winner-animation">
+                    <i class="fas fa-trophy text-8xl text-yellow-400 mb-8"></i>
+                    <h2 class="text-5xl font-bold mb-4 text-yellow-300">搶答成功!</h2>
+                    <div class="bg-gray-800 rounded-xl p-8 inline-block border-2 border-yellow-400">
+                        <h3 class="text-3xl font-bold mb-2" id="winnerName">獲勝者</h3>
+                        <p class="text-lg text-gray-400">搶答時間: <span id="winnerTime" class="text-green-400"></span></p>
+                    </div>
+                </div>
+                <button onclick="resetGame()" class="mt-8 bg-yellow-600 hover:bg-yellow-700 px-8 py-3 rounded-lg font-bold text-lg">
+                    <i class="fas fa-play"></i> 下一題
+                </button>
+            </div>
+
+            <div class="mt-8">
+                <h3 class="text-xl font-bold mb-4 text-gray-300">參與者列表</h3>
+                <div id="playersList" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 參與者模式 -->
+    <div id="playerMode" class="hidden container mx-auto px-4 py-8">
+        <div class="max-w-2xl mx-auto text-center">
+            <div class="flex justify-between items-center mb-8">
+                <h1 class="text-2xl font-bold text-gray-200">
+                    <i class="fas fa-user text-green-400"></i>
+                    <span id="currentPlayerName">參與者</span>
+                </h1>
+                <div class="flex items-center space-x-4">
+                    <span class="text-gray-400">房間: <span id="playerRoomCode" class="text-yellow-400 font-bold"></span></span>
+                    <button onclick="backToMenu()" class="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded text-sm">
+                        <i class="fas fa-arrow-left"></i> 返回
+                    </button>
+                </div>
+            </div>
+
+            <div id="buzzerReady" class="py-20">
+                <button id="buzzerButton" onclick="buzzer()" class="buzzer-button bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-bold py-16 px-16 rounded-full text-4xl disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i class="fas fa-hand-paper text-6xl mb-4 block"></i>
+                    搶答
+                </button>
+                <p class="mt-8 text-lg text-gray-400">準備好了嗎？點擊按鈕搶答！</p>
+            </div>
+
+            <div id="buzzerPressed" class="hidden py-20">
+                <div class="text-center">
+                    <i class="fas fa-check-circle text-8xl text-green-400 mb-8"></i>
+                    <h2 class="text-4xl font-bold mb-4 text-green-300">已搶答!</h2>
+                    <p class="text-xl text-gray-400">等待結果公布...</p>
+                </div>
+            </div>
+
+            <div id="buzzerResult" class="hidden py-20">
+                <div id="winnerResult" class="hidden text-center">
+                    <i class="fas fa-crown text-8xl text-yellow-400 mb-8"></i>
+                    <h2 class="text-4xl font-bold mb-4 text-yellow-300">恭喜獲勝!</h2>
+                    <p class="text-xl text-gray-400">您是第一個搶答成功的參與者</p>
+                </div>
+                <div id="loserResult" class="hidden text-center">
+                    <i class="fas fa-times-circle text-8xl text-gray-500 mb-8"></i>
+                    <h2 class="text-4xl font-bold mb-4 text-gray-400">很遺憾</h2>
+                    <p class="text-xl text-gray-500">其他人搶答更快，下次再來！</p>
+                    <p class="text-lg text-gray-600 mt-2">獲勝者: <span id="otherWinnerName"></span></p>
+                </div>
+            </div>
+
+            <div class="mt-8 text-sm text-gray-500">
+                <p><i class="fas fa-wifi"></i> 連接狀態: <span id="connectionStatus" class="text-green-400">已連接</span></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全域變數
+        let currentMode = '';
+        let roomCode = '';
+        let playerName = '';
+        let gameState = 'waiting'; // waiting, buzzing, finished
+        let players = new Map();
+        let winner = null;
+        let startTime = null;
+
+        // WebSocket 連接 (模擬，實際使用 localStorage + BroadcastChannel)
+        let gameChannel = null;
+
+        // 初始化
+        function init() {
+            // 檢查是否有 URL 參數
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlRoomCode = urlParams.get('room');
+            const mode = urlParams.get('mode');
+            const name = urlParams.get('name');
+
+            if (urlRoomCode) {
+                document.getElementById('roomCode').value = urlRoomCode;
+            }
+
+            if (mode === 'display' && urlRoomCode) {
+                roomCode = urlRoomCode;
+                startDisplayMode();
+            } else if (mode === 'player' && urlRoomCode && name) {
+                roomCode = urlRoomCode;
+                playerName = name;
+                document.getElementById('playerName').value = name;
+                startPlayerMode();
+            }
+
+            // 監聽 localStorage 變化
+            window.addEventListener('storage', handleStorageChange);
+        }
+
+        // 生成房間號碼
+        function generateRoomCode() {
+            const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+            document.getElementById('roomCode').value = code;
+        }
+
+        // 開始顯示屏模式
+        function startDisplayMode() {
+            const code = document.getElementById('roomCode').value.trim();
+            if (!code) {
+                alert('請輸入房間號碼');
+                return;
+            }
+
+            roomCode = code;
+            currentMode = 'display';
+            
+            document.getElementById('modeSelection').classList.add('hidden');
+            document.getElementById('displayMode').classList.remove('hidden');
+            document.getElementById('displayRoomCode').textContent = roomCode;
+
+            setupGameChannel();
+            resetGame();
+            updatePlayersList();
+
+            // 更新 URL
+            const url = new URL(window.location);
+            url.searchParams.set('room', roomCode);
+            url.searchParams.set('mode', 'display');
+            window.history.pushState({}, '', url);
+        }
+
+        // 開始參與者模式
+        function startPlayerMode() {
+            const code = document.getElementById('roomCode').value.trim();
+            const name = document.getElementById('playerName').value.trim();
+            
+            if (!code) {
+                alert('請輸入房間號碼');
+                return;
+            }
+            if (!name) {
+                alert('請輸入您的名字');
+                return;
+            }
+
+            roomCode = code;
+            playerName = name;
+            currentMode = 'player';
+
+            document.getElementById('modeSelection').classList.add('hidden');
+            document.getElementById('playerMode').classList.remove('hidden');
+            document.getElementById('currentPlayerName').textContent = playerName;
+            document.getElementById('playerRoomCode').textContent = roomCode;
+
+            setupGameChannel();
+            joinGame();
+
+            // 更新 URL
+            const url = new URL(window.location);
+            url.searchParams.set('room', roomCode);
+            url.searchParams.set('mode', 'player');
+            url.searchParams.set('name', playerName);
+            window.history.pushState({}, '', url);
+        }
+
+        // 設置遊戲通道
+        function setupGameChannel() {
+            // 使用 BroadcastChannel API (現代瀏覽器支援)
+            if ('BroadcastChannel' in window) {
+                gameChannel = new BroadcastChannel(`buzzer-game-${roomCode}`);
+                gameChannel.onmessage = handleGameMessage;
+            }
+        }
+
+        // 處理遊戲消息
+        function handleGameMessage(event) {
+            const { type, data } = event.data;
+            
+            switch (type) {
+                case 'player-join':
+                    if (currentMode === 'display') {
+                        players.set(data.id, data);
+                        updatePlayersList();
+                        saveGameState();
+                    }
+                    break;
+                case 'player-leave':
+                    if (currentMode === 'display') {
+                        players.delete(data.id);
+                        updatePlayersList();
+                        saveGameState();
+                    }
+                    break;
+                case 'buzzer-press':
+                    if (currentMode === 'display' && gameState === 'waiting') {
+                        handleBuzzerPress(data);
+                    } else if (currentMode === 'player' && data.playerId !== getPlayerId()) {
+                        // 其他玩家搶答了
+                        showOtherPlayerBuzzed(data);
+                    }
+                    break;
+                case 'game-reset':
+                    if (currentMode === 'player') {
+                        resetPlayerUI();
+                    }
+                    break;
+                case 'game-state':
+                    if (currentMode === 'player') {
+                        syncGameState(data);
+                    }
+                    break;
+            }
+        }
+
+        // 處理 localStorage 變化 (跨標籤頁通信備用方案)
+        function handleStorageChange(event) {
+            if (event.key === `buzzer-game-${roomCode}`) {
+                const data = JSON.parse(event.newValue || '{}');
+                if (data.type) {
+                    handleGameMessage({ data });
+                }
+            }
+        }
+
+        // 廣播消息
+        function broadcastMessage(type, data) {
+            const message = { type, data, timestamp: Date.now() };
+            
+            if (gameChannel) {
+                gameChannel.postMessage(message);
+            }
+            
+            // 備用方案：使用 localStorage
+            localStorage.setItem(`buzzer-game-${roomCode}`, JSON.stringify(message));
+        }
+
+        // 加入遊戲
+        function joinGame() {
+            const playerId = getPlayerId();
+            broadcastMessage('player-join', {
+                id: playerId,
+                name: playerName,
+                joinTime: Date.now()
+            });
+
+            // 請求當前遊戲狀態
+            broadcastMessage('request-state', { playerId });
+        }
+
+        // 獲取玩家 ID
+        function getPlayerId() {
+            let playerId = localStorage.getItem('buzzer-player-id');
+            if (!playerId) {
+                playerId = `player-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+                localStorage.setItem('buzzer-player-id', playerId);
+            }
+            return playerId;
+        }
+
+        // 搶答按鈕
+        function buzzer() {
+            if (gameState !== 'waiting') return;
+
+            const buzzerTime = Date.now();
+            const playerId = getPlayerId();
+
+            // 禁用按鈕
+            document.getElementById('buzzerButton').disabled = true;
+            document.getElementById('buzzerReady').classList.add('hidden');
+            document.getElementById('buzzerPressed').classList.remove('hidden');
+
+            // 廣播搶答
+            broadcastMessage('buzzer-press', {
+                playerId: playerId,
+                playerName: playerName,
+                time: buzzerTime
+            });
+        }
+
+        // 處理搶答按壓
+        function handleBuzzerPress(data) {
+            if (gameState !== 'waiting') return;
+
+            gameState = 'finished';
+            winner = data;
+            startTime = data.time;
+
+            // 顯示結果
+            document.getElementById('waitingScreen').classList.add('hidden');
+            document.getElementById('resultScreen').classList.remove('hidden');
+            document.getElementById('winnerName').textContent = data.playerName;
+            document.getElementById('winnerTime').textContent = new Date(data.time).toLocaleTimeString();
+
+            // 更新玩家狀態
+            if (players.has(data.playerId)) {
+                const player = players.get(data.playerId);
+                player.winner = true;
+                players.set(data.playerId, player);
+                updatePlayersList();
+            }
+
+            // 通知所有玩家結果
+            broadcastMessage('game-result', {
+                winner: data,
+                state: 'finished'
+            });
+
+            saveGameState();
+        }
+
+        // 顯示其他玩家搶答了
+        function showOtherPlayerBuzzed(data) {
+            document.getElementById('buzzerReady').classList.add('hidden');
+            document.getElementById('buzzerPressed').classList.add('hidden');
+            document.getElementById('buzzerResult').classList.remove('hidden');
+            
+            if (data.playerId === getPlayerId()) {
+                document.getElementById('winnerResult').classList.remove('hidden');
+                document.getElementById('loserResult').classList.add('hidden');
+            } else {
+                document.getElementById('winnerResult').classList.add('hidden');
+                document.getElementById('loserResult').classList.remove('hidden');
+                document.getElementById('otherWinnerName').textContent = data.playerName;
+            }
+        }
+
+        // 重置遊戲
+        function resetGame() {
+            gameState = 'waiting';
+            winner = null;
+            startTime = null;
+
+            if (currentMode === 'display') {
+                document.getElementById('waitingScreen').classList.remove('hidden');
+                document.getElementById('resultScreen').classList.add('hidden');
+                
+                // 重置玩家狀態
+                players.forEach((player, id) => {
+                    delete player.winner;
+                    players.set(id, player);
+                });
+                updatePlayersList();
+            }
+
+            broadcastMessage('game-reset', { state: 'waiting' });
+            saveGameState();
+        }
+
+        // 重置玩家 UI
+        function resetPlayerUI() {
+            gameState = 'waiting';
+            document.getElementById('buzzerButton').disabled = false;
+            document.getElementById('buzzerReady').classList.remove('hidden');
+            document.getElementById('buzzerPressed').classList.add('hidden');
+            document.getElementById('buzzerResult').classList.add('hidden');
+        }
+
+        // 同步遊戲狀態
+        function syncGameState(data) {
+            gameState = data.state;
+            if (data.winner && data.winner.playerId !== getPlayerId()) {
+                showOtherPlayerBuzzed(data.winner);
+            }
+        }
+
+        // 更新玩家列表
+        function updatePlayersList() {
+            const list = document.getElementById('playersList');
+            const count = document.getElementById('connectedCount');
+            
+            list.innerHTML = '';
+            count.textContent = players.size;
+
+            players.forEach((player, id) => {
+                const playerDiv = document.createElement('div');
+                playerDiv.className = `bg-gray-800 rounded-lg p-4 border ${player.winner ? 'border-yellow-400 bg-yellow-900' : 'border-gray-600'}`;
+                playerDiv.innerHTML = `
+                    <div class="flex items-center space-x-2">
+                        ${player.winner ? '<i class="fas fa-crown text-yellow-400"></i>' : '<i class="fas fa-user text-gray-400"></i>'}
+                        <span class="font-bold ${player.winner ? 'text-yellow-300' : 'text-gray-200'}">${player.name}</span>
+                    </div>
+                    <div class="text-xs text-gray-500 mt-1">
+                        ${new Date(player.joinTime).toLocaleTimeString()}
+                    </div>
+                `;
+                list.appendChild(playerDiv);
+            });
+        }
+
+        // 保存遊戲狀態
+        function saveGameState() {
+            const state = {
+                gameState,
+                players: Array.from(players.entries()),
+                winner,
+                startTime,
+                roomCode
+            };
+            localStorage.setItem(`buzzer-state-${roomCode}`, JSON.stringify(state));
+        }
+
+        // 載入遊戲狀態
+        function loadGameState() {
+            const saved = localStorage.getItem(`buzzer-state-${roomCode}`);
+            if (saved) {
+                const state = JSON.parse(saved);
+                gameState = state.gameState || 'waiting';
+                players = new Map(state.players || []);
+                winner = state.winner;
+                startTime = state.startTime;
+                
+                if (currentMode === 'display') {
+                    updatePlayersList();
+                    if (gameState === 'finished' && winner) {
+                        document.getElementById('waitingScreen').classList.add('hidden');
+                        document.getElementById('resultScreen').classList.remove('hidden');
+                        document.getElementById('winnerName').textContent = winner.playerName;
+                        document.getElementById('winnerTime').textContent = new Date(winner.time).toLocaleTimeString();
+                    }
+                }
+            }
+        }
+
+        // 返回主選單
+        function backToMenu() {
+            if (gameChannel) {
+                // 通知離開
+                if (currentMode === 'player') {
+                    broadcastMessage('player-leave', { id: getPlayerId() });
+                }
+                gameChannel.close();
+            }
+
+            document.getElementById('modeSelection').classList.remove('hidden');
+            document.getElementById('displayMode').classList.add('hidden');
+            document.getElementById('playerMode').classList.add('hidden');
+            
+            currentMode = '';
+            roomCode = '';
+            playerName = '';
+
+            // 清除 URL 參數
+            window.history.pushState({}, '', window.location.pathname);
+        }
+
+        // 頁面載入時初始化
+        window.addEventListener('load', init);
+
+        // 頁面卸載時清理
+        window.addEventListener('beforeunload', () => {
+            if (currentMode === 'player' && gameChannel) {
+                broadcastMessage('player-leave', { id: getPlayerId() });
+            }
+        });
+
+        // 定期檢查連接狀態
+        setInterval(() => {
+            if (currentMode === 'player') {
+                const status = document.getElementById('connectionStatus');
+                status.textContent = gameChannel ? '已連接' : '連接中斷';
+                status.className = gameChannel ? 'text-green-400' : 'text-red-400';
+            }
+        }, 5000);
+    </script>
+</body>
+</html>
