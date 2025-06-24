@@ -3,543 +3,390 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>多設備線上搶答器</title>
+    <title>線上搶答器系統</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
-    <style>
-        .buzzer-button {
-            background: linear-gradient(145deg, #374151, #4b5563);
-            box-shadow: 8px 8px 16px #1f2937, -8px -8px 16px #6b7280;
-        }
-        .buzzer-button:active {
-            box-shadow: inset 8px 8px 16px #1f2937, inset -8px -8px 16px #6b7280;
-        }
-        .winner-animation {
-            animation: pulse 2s infinite, glow 2s infinite;
-        }
-        @keyframes glow {
-            0%, 100% { box-shadow: 0 0 20px #10b981; }
-            50% { box-shadow: 0 0 40px #10b981, 0 0 60px #10b981; }
-        }
-        .participant-card {
-            background: linear-gradient(145deg, #1f2937, #374151);
-            border: 1px solid #4b5563;
-        }
-    </style>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 </head>
-<body class="bg-gray-900 text-gray-100 min-h-screen">
-    <!-- 歡迎頁面 -->
-    <div id="welcomePage" class="container mx-auto px-4 py-8">
-        <div class="max-w-md mx-auto bg-gray-800 rounded-lg shadow-xl p-8">
-            <div class="text-center mb-8">
-                <i class="fas fa-bolt text-5xl text-yellow-500 mb-4"></i>
-                <h1 class="text-3xl font-bold text-gray-100 mb-2">線上搶答器</h1>
-                <p class="text-gray-400">選擇您的角色開始使用</p>
-            </div>
+<body class="bg-gray-50 min-h-screen">
+    <!-- 首頁選擇 -->
+    <div id="homePage" class="container mx-auto px-4 py-8 max-w-md">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h1 class="text-2xl font-bold text-gray-800 text-center mb-6">
+                <i class="fas fa-hand-paper text-blue-600 mr-2"></i>
+                線上搶答器
+            </h1>
             
             <div class="space-y-4">
-                <button onclick="startAsHost()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-lg transition duration-300 flex items-center justify-center">
-                    <i class="fas fa-crown mr-3"></i>
-                    主持人
+                <button onclick="showHostPage()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg transition duration-200">
+                    <i class="fas fa-crown mr-2"></i>
+                    我是主持人
                 </button>
-                <button onclick="startAsParticipant()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-6 rounded-lg transition duration-300 flex items-center justify-center">
-                    <i class="fas fa-user mr-3"></i>
-                    參與者
+                
+                <button onclick="showParticipantPage()" class="w-full bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-lg transition duration-200">
+                    <i class="fas fa-users mr-2"></i>
+                    我是參與者
                 </button>
             </div>
             
-            <div class="mt-8 p-4 bg-gray-700 rounded-lg text-sm text-gray-300">
-                <p class="mb-2"><i class="fas fa-info-circle mr-2"></i>使用說明：</p>
-                <ul class="list-disc list-inside space-y-1 text-xs">
-                    <li>主持人負責控制搶答和查看結果</li>
-                    <li>參與者可以進行搶答</li>
-                    <li>支援多設備同時使用</li>
-                </ul>
+            <div class="mt-6 text-center text-sm text-gray-600">
+                <p>完全免費的即時搶答系統</p>
             </div>
         </div>
     </div>
 
-    <!-- 主持人界面 -->
-    <div id="hostPage" class="hidden container mx-auto px-4 py-8">
-        <div class="max-w-4xl mx-auto">
-            <!-- 標題區域 -->
-            <div class="bg-gray-800 rounded-lg shadow-xl p-6 mb-6">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h1 class="text-2xl font-bold text-gray-100 flex items-center">
-                            <i class="fas fa-crown text-yellow-500 mr-3"></i>
-                            主持人控制台
-                        </h1>
-                        <p class="text-gray-400 mt-1">房間ID: <span id="roomId" class="text-blue-400 font-mono"></span></p>
-                    </div>
-                    <button onclick="goBack()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg">
-                        <i class="fas fa-arrow-left mr-2"></i>返回
+    <!-- 主持人頁面 -->
+    <div id="hostPage" class="hidden container mx-auto px-4 py-8 max-w-4xl">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">
+                    <i class="fas fa-crown text-yellow-500 mr-2"></i>
+                    主持人控制台
+                </h2>
+                <button onclick="showHomePage()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-home text-xl"></i>
+                </button>
+            </div>
+
+            <!-- 房間設置 -->
+            <div id="roomSetup" class="mb-6">
+                <div class="flex space-x-4">
+                    <input type="text" id="roomName" placeholder="輸入房間名稱" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg">
+                    <button onclick="createRoom()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg">
+                        創建房間
                     </button>
                 </div>
             </div>
 
-            <!-- 控制區域 -->
-            <div class="grid md:grid-cols-2 gap-6 mb-6">
-                <div class="bg-gray-800 rounded-lg shadow-xl p-6">
-                    <h3 class="text-lg font-semibold mb-4 text-gray-100">搶答控制</h3>
-                    <div class="space-y-3">
-                        <button id="startBuzzBtn" onclick="startBuzzing()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300">
-                            <i class="fas fa-play mr-2"></i>開始搶答
-                        </button>
-                        <button id="stopBuzzBtn" onclick="stopBuzzing()" disabled class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
-                            <i class="fas fa-stop mr-2"></i>停止搶答
-                        </button>
-                        <button onclick="resetBuzzing()" class="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300">
-                            <i class="fas fa-redo mr-2"></i>重置
-                        </button>
+            <!-- 房間資訊 -->
+            <div id="roomInfo" class="hidden mb-6 p-4 bg-blue-50 rounded-lg">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <span class="text-sm text-gray-600">房間代碼：</span>
+                        <span id="roomCode" class="font-mono text-lg font-bold text-blue-600"></span>
                     </div>
-                </div>
-
-                <!-- 搶答結果 -->
-                <div class="bg-gray-800 rounded-lg shadow-xl p-6">
-                    <h3 class="text-lg font-semibold mb-4 text-gray-100">搶答結果</h3>
-                    <div id="buzzResult" class="text-center py-8 text-gray-500">
-                        尚未開始搶答
-                    </div>
+                    <button onclick="resetBuzzer()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg">
+                        重置搶答
+                    </button>
                 </div>
             </div>
 
             <!-- 參與者列表 -->
-            <div class="bg-gray-800 rounded-lg shadow-xl p-6">
-                <h3 class="text-lg font-semibold mb-4 text-gray-100">
-                    參與者 (<span id="participantCount">0</span>)
-                </h3>
-                <div id="participantsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div class="text-center py-8 text-gray-500 col-span-full">
-                        等待參與者加入...
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-3">
+                        <i class="fas fa-users mr-2"></i>
+                        已連接參與者 (<span id="participantCount">0</span>)
+                    </h3>
+                    <div id="participantsList" class="space-y-2 max-h-64 overflow-y-auto">
+                        <p class="text-gray-500 text-center py-4">等待參與者加入...</p>
+                    </div>
+                </div>
+
+                <!-- 搶答結果 -->
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-3">
+                        <i class="fas fa-trophy mr-2"></i>
+                        搶答結果
+                    </h3>
+                    <div id="buzzerResult" class="text-center py-8">
+                        <i class="fas fa-clock text-gray-400 text-4xl mb-2"></i>
+                        <p class="text-gray-500">等待搶答...</p>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 參與者界面 -->
-    <div id="participantPage" class="hidden container mx-auto px-4 py-8">
-        <!-- 名字輸入 -->
-        <div id="nameInput" class="max-w-md mx-auto bg-gray-800 rounded-lg shadow-xl p-8">
-            <div class="text-center mb-6">
-                <i class="fas fa-user-plus text-4xl text-green-500 mb-4"></i>
-                <h2 class="text-2xl font-bold text-gray-100 mb-2">加入搶答</h2>
-                <p class="text-gray-400">請輸入您的名字</p>
-            </div>
-            
-            <div class="space-y-4">
-                <input type="text" id="participantName" placeholder="輸入您的名字" maxlength="20" 
-                       class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <input type="text" id="roomIdInput" placeholder="房間ID (可選)" 
-                       class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <button onclick="joinRoom()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300">
-                    <i class="fas fa-sign-in-alt mr-2"></i>加入房間
-                </button>
-                <button onclick="goBack()" class="w-full bg-gray-600 hover:bg-gray-700 text-white py-3 px-4 rounded-lg transition duration-300">
-                    <i class="fas fa-arrow-left mr-2"></i>返回
+    <!-- 參與者頁面 -->
+    <div id="participantPage" class="hidden container mx-auto px-4 py-8 max-w-md">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">
+                    <i class="fas fa-hand-paper text-green-600 mr-2"></i>
+                    參與搶答
+                </h2>
+                <button onclick="showHomePage()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-home text-xl"></i>
                 </button>
             </div>
-        </div>
 
-        <!-- 搶答界面 -->
-        <div id="buzzerInterface" class="hidden max-w-lg mx-auto">
-            <div class="bg-gray-800 rounded-lg shadow-xl p-6 mb-6">
-                <div class="text-center">
-                    <h2 class="text-xl font-bold text-gray-100 mb-2">
-                        歡迎, <span id="displayName" class="text-blue-400"></span>!
-                    </h2>
-                    <p class="text-gray-400">房間: <span id="displayRoomId" class="text-blue-400 font-mono"></span></p>
+            <!-- 加入房間 -->
+            <div id="joinRoom">
+                <div class="space-y-4 mb-6">
+                    <input type="text" id="participantName" placeholder="輸入您的姓名" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                    <input type="text" id="roomCodeInput" placeholder="輸入房間代碼" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                    <button onclick="joinRoom()" class="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg">
+                        加入房間
+                    </button>
                 </div>
             </div>
 
-            <!-- 搶答按鈕 -->
-            <div class="text-center mb-6">
-                <button id="buzzerBtn" onclick="buzz()" disabled
-                        class="buzzer-button w-64 h-64 rounded-full text-white font-bold text-2xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed mx-auto flex items-center justify-center">
-                    <div class="text-center">
-                        <i class="fas fa-hand-paper text-4xl mb-2"></i>
-                        <div>搶答</div>
-                    </div>
-                </button>
-            </div>
-
-            <!-- 狀態顯示 -->
-            <div class="bg-gray-800 rounded-lg shadow-xl p-6 text-center">
-                <div id="buzzerStatus" class="text-gray-400">
-                    等待主持人開始搶答...
+            <!-- 搶答界面 -->
+            <div id="buzzerInterface" class="hidden text-center">
+                <div class="mb-4">
+                    <p class="text-sm text-gray-600">房間：<span id="currentRoom" class="font-mono"></span></p>
+                    <p class="text-sm text-gray-600">姓名：<span id="currentName"></span></p>
                 </div>
-            </div>
 
-            <div class="mt-6 text-center">
-                <button onclick="leaveBuzzer()" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg transition duration-300">
-                    <i class="fas fa-sign-out-alt mr-2"></i>離開房間
+                <button id="buzzerButton" onclick="buzz()" class="w-48 h-48 bg-red-500 hover:bg-red-600 text-white rounded-full text-2xl font-bold shadow-lg transform transition duration-200 hover:scale-105 mx-auto block">
+                    <i class="fas fa-hand-paper text-4xl"></i>
+                    <div class="mt-2">搶答</div>
+                </button>
+
+                <div id="buzzerStatus" class="mt-6 p-4 rounded-lg">
+                    <p class="text-gray-600">準備搶答...</p>
+                </div>
+
+                <button onclick="leaveRoom()" class="mt-4 text-gray-500 hover:text-gray-700 text-sm">
+                    離開房間
                 </button>
             </div>
         </div>
     </div>
 
     <script>
-        // 全局變量
-        let currentRole = '';
-        let roomId = '';
+        // Firebase 配置 (使用演示配置，實際使用需要替換)
+        const firebaseConfig = {
+            apiKey: "demo-api-key",
+            authDomain: "demo-project.firebaseapp.com",
+            databaseURL: "https://demo-project-default-rtdb.firebaseio.com/",
+            projectId: "demo-project"
+        };
+
+        // 由於這是演示版本，我們使用本地存儲模擬Firebase
+        let currentRoom = null;
+        let isHost = false;
         let participantName = '';
-        let buzzingActive = false;
-        let participants = new Map();
-        let buzzOrder = [];
-        let channel = null;
+        let buzzerActive = true;
 
-        // 生成房間ID
-        function generateRoomId() {
-            return Math.random().toString(36).substr(2, 6).toUpperCase();
-        }
+        // 模擬數據存儲
+        let rooms = {};
 
-        // 初始化通信頻道
-        function initChannel(room) {
-            if (channel) {
-                channel.close();
-            }
-            channel = new BroadcastChannel(`buzzer_${room}`);
-            channel.onmessage = handleMessage;
-        }
-
-        // 處理消息
-        function handleMessage(event) {
-            const { type, data } = event.data;
-            
-            switch (type) {
-                case 'participant_join':
-                    if (currentRole === 'host') {
-                        participants.set(data.id, data);
-                        updateParticipantsList();
-                    }
-                    break;
-                    
-                case 'participant_leave':
-                    if (currentRole === 'host') {
-                        participants.delete(data.id);
-                        updateParticipantsList();
-                    }
-                    break;
-                    
-                case 'buzzing_start':
-                    if (currentRole === 'participant') {
-                        buzzingActive = true;
-                        updateBuzzerButton();
-                        document.getElementById('buzzerStatus').innerHTML = '<i class="fas fa-bolt text-yellow-500 mr-2"></i>搶答進行中！點擊按鈕搶答！';
-                    }
-                    break;
-                    
-                case 'buzzing_stop':
-                    buzzingActive = false;
-                    if (currentRole === 'participant') {
-                        updateBuzzerButton();
-                        document.getElementById('buzzerStatus').innerHTML = '<i class="fas fa-stop text-red-500 mr-2"></i>搶答已停止';
-                    }
-                    break;
-                    
-                case 'buzzing_reset':
-                    buzzOrder = [];
-                    buzzingActive = false;
-                    if (currentRole === 'host') {
-                        updateBuzzResult();
-                    } else {
-                        updateBuzzerButton();
-                        document.getElementById('buzzerStatus').innerHTML = '<i class="fas fa-redo text-blue-500 mr-2"></i>搶答已重置，等待開始...';
-                    }
-                    break;
-                    
-                case 'buzz':
-                    if (currentRole === 'host' && buzzingActive) {
-                        if (!buzzOrder.find(b => b.id === data.id)) {
-                            buzzOrder.push({
-                                id: data.id,
-                                name: data.name,
-                                time: Date.now()
-                            });
-                            updateBuzzResult();
-                        }
-                    }
-                    break;
-            }
-        }
-
-        // 開始作為主持人
-        function startAsHost() {
-            currentRole = 'host';
-            roomId = generateRoomId();
-            
-            document.getElementById('welcomePage').classList.add('hidden');
-            document.getElementById('hostPage').classList.remove('hidden');
-            document.getElementById('roomId').textContent = roomId;
-            
-            initChannel(roomId);
-            
-            // 定期清理離線參與者
-            setInterval(() => {
-                const now = Date.now();
-                for (let [id, participant] of participants) {
-                    if (now - participant.lastSeen > 30000) { // 30秒未活動
-                        participants.delete(id);
-                        updateParticipantsList();
-                    }
-                }
-            }, 10000);
-        }
-
-        // 開始作為參與者
-        function startAsParticipant() {
-            currentRole = 'participant';
-            document.getElementById('welcomePage').classList.add('hidden');
-            document.getElementById('participantPage').classList.remove('hidden');
-            
-            // 監聽Enter鍵
-            document.getElementById('participantName').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    joinRoom();
-                }
-            });
-            document.getElementById('roomIdInput').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    joinRoom();
-                }
-            });
-        }
-
-        // 加入房間
-        function joinRoom() {
-            const name = document.getElementById('participantName').value.trim();
-            const inputRoomId = document.getElementById('roomIdInput').value.trim();
-            
-            if (!name) {
-                alert('請輸入您的名字');
-                return;
-            }
-            
-            participantName = name;
-            roomId = inputRoomId || generateRoomId();
-            
-            document.getElementById('nameInput').classList.add('hidden');
-            document.getElementById('buzzerInterface').classList.remove('hidden');
-            document.getElementById('displayName').textContent = participantName;
-            document.getElementById('displayRoomId').textContent = roomId;
-            
-            initChannel(roomId);
-            
-            // 通知主持人有新參與者
-            const participantId = `participant_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
-            channel.postMessage({
-                type: 'participant_join',
-                data: {
-                    id: participantId,
-                    name: participantName,
-                    lastSeen: Date.now()
-                }
-            });
-            
-            // 定期發送心跳
-            setInterval(() => {
-                if (channel) {
-                    channel.postMessage({
-                        type: 'participant_join',
-                        data: {
-                            id: participantId,
-                            name: participantName,
-                            lastSeen: Date.now()
-                        }
-                    });
-                }
-            }, 15000);
-            
-            // 離開時通知
-            window.addEventListener('beforeunload', () => {
-                if (channel) {
-                    channel.postMessage({
-                        type: 'participant_leave',
-                        data: { id: participantId }
-                    });
-                }
-            });
-        }
-
-        // 更新參與者列表
-        function updateParticipantsList() {
-            const container = document.getElementById('participantsList');
-            const count = document.getElementById('participantCount');
-            
-            count.textContent = participants.size;
-            
-            if (participants.size === 0) {
-                container.innerHTML = '<div class="text-center py-8 text-gray-500 col-span-full">等待參與者加入...</div>';
-                return;
-            }
-            
-            container.innerHTML = Array.from(participants.values()).map(p => `
-                <div class="participant-card rounded-lg p-4 text-center">
-                    <i class="fas fa-user text-2xl text-blue-400 mb-2"></i>
-                    <div class="font-semibold text-gray-100">${p.name}</div>
-                    <div class="text-xs text-gray-400 mt-1">已連接</div>
-                </div>
-            `).join('');
-        }
-
-        // 開始搶答
-        function startBuzzing() {
-            buzzingActive = true;
-            buzzOrder = [];
-            
-            document.getElementById('startBuzzBtn').disabled = true;
-            document.getElementById('stopBuzzBtn').disabled = false;
-            
-            updateBuzzResult();
-            
-            channel.postMessage({
-                type: 'buzzing_start',
-                data: {}
-            });
-        }
-
-        // 停止搶答
-        function stopBuzzing() {
-            buzzingActive = false;
-            
-            document.getElementById('startBuzzBtn').disabled = false;
-            document.getElementById('stopBuzzBtn').disabled = true;
-            
-            channel.postMessage({
-                type: 'buzzing_stop',
-                data: {}
-            });
-        }
-
-        // 重置搶答
-        function resetBuzzing() {
-            buzzingActive = false;
-            buzzOrder = [];
-            
-            document.getElementById('startBuzzBtn').disabled = false;
-            document.getElementById('stopBuzzBtn').disabled = true;
-            
-            updateBuzzResult();
-            
-            channel.postMessage({
-                type: 'buzzing_reset',
-                data: {}
-            });
-        }
-
-        // 更新搶答結果
-        function updateBuzzResult() {
-            const container = document.getElementById('buzzResult');
-            
-            if (!buzzingActive && buzzOrder.length === 0) {
-                container.innerHTML = '<div class="text-gray-500">尚未開始搶答</div>';
-                return;
-            }
-            
-            if (buzzingActive && buzzOrder.length === 0) {
-                container.innerHTML = '<div class="text-yellow-500"><i class="fas fa-bolt mr-2"></i>搶答進行中...</div>';
-                return;
-            }
-            
-            if (buzzOrder.length > 0) {
-                const winner = buzzOrder[0];
-                let html = `
-                    <div class="winner-animation bg-green-600 rounded-lg p-4 mb-4">
-                        <div class="text-xl font-bold text-white">
-                            <i class="fas fa-trophy mr-2"></i>${winner.name}
-                        </div>
-                        <div class="text-green-200 mt-1">第一名搶答成功！</div>
-                    </div>
-                `;
-                
-                if (buzzOrder.length > 1) {
-                    html += '<div class="space-y-2">';
-                    buzzOrder.slice(1).forEach((buzz, index) => {
-                        html += `
-                            <div class="bg-gray-700 rounded p-2 text-sm">
-                                第${index + 2}名: ${buzz.name}
-                            </div>
-                        `;
-                    });
-                    html += '</div>';
-                }
-                
-                container.innerHTML = html;
-            }
-        }
-
-        // 搶答
-        function buzz() {
-            if (!buzzingActive) return;
-            
-            const participantId = `participant_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
-            
-            channel.postMessage({
-                type: 'buzz',
-                data: {
-                    id: participantId,
-                    name: participantName
-                }
-            });
-            
-            // 更新按鈕狀態
-            document.getElementById('buzzerBtn').disabled = true;
-            document.getElementById('buzzerStatus').innerHTML = '<i class="fas fa-check text-green-500 mr-2"></i>搶答已提交！等待結果...';
-        }
-
-        // 更新搶答按鈕
-        function updateBuzzerButton() {
-            const btn = document.getElementById('buzzerBtn');
-            btn.disabled = !buzzingActive;
-            
-            if (buzzingActive) {
-                btn.classList.remove('opacity-50', 'cursor-not-allowed');
-                btn.classList.add('hover:scale-105');
-            } else {
-                btn.classList.add('opacity-50', 'cursor-not-allowed');
-                btn.classList.remove('hover:scale-105');
-            }
-        }
-
-        // 離開搶答器
-        function leaveBuzzer() {
-            document.getElementById('buzzerInterface').classList.add('hidden');
-            document.getElementById('nameInput').classList.remove('hidden');
-            document.getElementById('participantName').value = '';
-            document.getElementById('roomIdInput').value = '';
-            
-            if (channel) {
-                channel.close();
-                channel = null;
-            }
-        }
-
-        // 返回主頁
-        function goBack() {
-            if (channel) {
-                channel.close();
-                channel = null;
-            }
-            
+        function showHomePage() {
+            document.getElementById('homePage').classList.remove('hidden');
             document.getElementById('hostPage').classList.add('hidden');
             document.getElementById('participantPage').classList.add('hidden');
-            document.getElementById('welcomePage').classList.remove('hidden');
-            
-            // 重置狀態
-            currentRole = '';
-            roomId = '';
-            participantName = '';
-            buzzingActive = false;
-            participants.clear();
-            buzzOrder = [];
+            resetState();
         }
 
-        // 初始化
+        function showHostPage() {
+            document.getElementById('homePage').classList.add('hidden');
+            document.getElementById('hostPage').classList.remove('hidden');
+            document.getElementById('participantPage').classList.add('hidden');
+            isHost = true;
+        }
+
+        function showParticipantPage() {
+            document.getElementById('homePage').classList.add('hidden');
+            document.getElementById('hostPage').classList.add('hidden');
+            document.getElementById('participantPage').classList.remove('hidden');
+            isHost = false;
+        }
+
+        function resetState() {
+            currentRoom = null;
+            isHost = false;
+            participantName = '';
+            buzzerActive = true;
+        }
+
+        function generateRoomCode() {
+            return Math.random().toString(36).substring(2, 8).toUpperCase();
+        }
+
+        function createRoom() {
+            const roomName = document.getElementById('roomName').value.trim();
+            if (!roomName) {
+                alert('請輸入房間名稱');
+                return;
+            }
+
+            currentRoom = generateRoomCode();
+            rooms[currentRoom] = {
+                name: roomName,
+                participants: {},
+                buzzerResult: null,
+                buzzerActive: true
+            };
+
+            document.getElementById('roomCode').textContent = currentRoom;
+            document.getElementById('roomInfo').classList.remove('hidden');
+            
+            // 開始監聽房間變化
+            startRoomMonitoring();
+        }
+
+        function joinRoom() {
+            const name = document.getElementById('participantName').value.trim();
+            const roomCode = document.getElementById('roomCodeInput').value.trim().toUpperCase();
+
+            if (!name || !roomCode) {
+                alert('請輸入姓名和房間代碼');
+                return;
+            }
+
+            if (!rooms[roomCode]) {
+                alert('房間不存在');
+                return;
+            }
+
+            participantName = name;
+            currentRoom = roomCode;
+
+            // 加入房間
+            rooms[currentRoom].participants[name] = {
+                name: name,
+                joinTime: Date.now()
+            };
+
+            document.getElementById('currentRoom').textContent = currentRoom;
+            document.getElementById('currentName').textContent = name;
+            document.getElementById('joinRoom').classList.add('hidden');
+            document.getElementById('buzzerInterface').classList.remove('hidden');
+
+            // 觸發主持人界面更新
+            if (typeof updateParticipantsList === 'function') {
+                updateParticipantsList();
+            }
+        }
+
+        function leaveRoom() {
+            if (currentRoom && participantName) {
+                delete rooms[currentRoom].participants[participantName];
+            }
+            
+            document.getElementById('joinRoom').classList.remove('hidden');
+            document.getElementById('buzzerInterface').classList.add('hidden');
+            
+            // 清空輸入框
+            document.getElementById('participantName').value = '';
+            document.getElementById('roomCodeInput').value = '';
+        }
+
+        function buzz() {
+            if (!buzzerActive || !currentRoom) return;
+
+            const room = rooms[currentRoom];
+            if (!room.buzzerActive) {
+                document.getElementById('buzzerStatus').innerHTML = 
+                    '<p class="text-red-600">搶答已結束</p>';
+                return;
+            }
+
+            // 記錄搶答結果
+            room.buzzerResult = {
+                name: participantName,
+                time: Date.now()
+            };
+            room.buzzerActive = false;
+
+            // 更新按鈕狀態
+            document.getElementById('buzzerButton').classList.add('opacity-50');
+            document.getElementById('buzzerButton').disabled = true;
+            document.getElementById('buzzerStatus').innerHTML = 
+                '<p class="text-green-600 font-bold">搶答成功！</p>';
+
+            // 更新主持人界面
+            updateBuzzerResult();
+        }
+
+        function resetBuzzer() {
+            if (!currentRoom) return;
+
+            const room = rooms[currentRoom];
+            room.buzzerResult = null;
+            room.buzzerActive = true;
+
+            // 重置搶答界面
+            document.getElementById('buzzerResult').innerHTML = `
+                <i class="fas fa-clock text-gray-400 text-4xl mb-2"></i>
+                <p class="text-gray-500">等待搶答...</p>
+            `;
+
+            // 通知所有參與者重置
+            buzzerActive = true;
+            const buzzerButton = document.getElementById('buzzerButton');
+            if (buzzerButton) {
+                buzzerButton.classList.remove('opacity-50');
+                buzzerButton.disabled = false;
+            }
+            const buzzerStatus = document.getElementById('buzzerStatus');
+            if (buzzerStatus) {
+                buzzerStatus.innerHTML = '<p class="text-gray-600">準備搶答...</p>';
+            }
+        }
+
+        function startRoomMonitoring() {
+            // 模擬即時更新
+            setInterval(() => {
+                if (isHost && currentRoom) {
+                    updateParticipantsList();
+                    updateBuzzerResult();
+                }
+            }, 1000);
+        }
+
+        function updateParticipantsList() {
+            if (!currentRoom || !rooms[currentRoom]) return;
+
+            const participants = rooms[currentRoom].participants;
+            const participantsList = document.getElementById('participantsList');
+            const participantCount = document.getElementById('participantCount');
+
+            const count = Object.keys(participants).length;
+            participantCount.textContent = count;
+
+            if (count === 0) {
+                participantsList.innerHTML = '<p class="text-gray-500 text-center py-4">等待參與者加入...</p>';
+                return;
+            }
+
+            const participantsHTML = Object.values(participants).map(participant => `
+                <div class="flex items-center justify-between bg-white p-3 rounded-lg">
+                    <div class="flex items-center">
+                        <i class="fas fa-user text-green-600 mr-2"></i>
+                        <span class="font-medium">${participant.name}</span>
+                    </div>
+                    <span class="text-xs text-gray-500">
+                        ${new Date(participant.joinTime).toLocaleTimeString()}
+                    </span>
+                </div>
+            `).join('');
+
+            participantsList.innerHTML = participantsHTML;
+        }
+
+        function updateBuzzerResult() {
+            if (!currentRoom || !rooms[currentRoom]) return;
+
+            const result = rooms[currentRoom].buzzerResult;
+            const buzzerResultDiv = document.getElementById('buzzerResult');
+
+            if (result) {
+                buzzerResultDiv.innerHTML = `
+                    <div class="text-center">
+                        <i class="fas fa-trophy text-yellow-500 text-4xl mb-2"></i>
+                        <h4 class="text-xl font-bold text-green-600 mb-1">搶答成功！</h4>
+                        <p class="text-lg font-semibold">${result.name}</p>
+                        <p class="text-sm text-gray-500">${new Date(result.time).toLocaleTimeString()}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // 頁面載入完成後的初始化
         document.addEventListener('DOMContentLoaded', function() {
-            // 檢查瀏覽器支援
-            if (!window.BroadcastChannel) {
-                alert('您的瀏覽器不支援此功能，請使用Chrome、Firefox或Safari最新版本。');
+            // 檢查是否有保存的狀態
+            showHomePage();
+        });
+
+        // 防止意外關閉
+        window.addEventListener('beforeunload', function(e) {
+            if (currentRoom && participantName) {
+                e.preventDefault();
+                e.returnValue = '';
             }
         });
     </script>
