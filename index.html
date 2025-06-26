@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>多設備線上搶答器 - 升級版</title>
+    <title>線上搶答器</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
@@ -245,6 +245,12 @@
             text-align: center;
         }
 
+        .copy-success {
+            background: rgba(34, 197, 94, 0.2);
+            border-color: rgba(34, 197, 94, 0.4);
+            color: #22c55e;
+        }
+
         .copyright-footer {
             position: fixed;
             bottom: 0;
@@ -276,7 +282,7 @@
         <header class="text-center mb-12">
             <h1 class="text-4xl font-bold mb-4">
                 <i class="fas fa-bolt text-yellow-400 mr-3"></i>
-                線上搶答器 - 升級版
+                線上搶答器
             </h1>
         </header>
 
@@ -334,7 +340,6 @@
                 <div class="qr-section mb-6">
                     <div class="mb-4">
                         <h3 class="text-xl font-semibold mb-2">房間代碼: <span id="displayRoomCode" class="text-green-400 font-mono text-2xl"></span></h3>
-                        <p class="text-gray-300">分享此QR CODE讓其他人快速加入</p>
                     </div>
                     <div class="flex justify-center mb-4">
                         <canvas id="qrCanvas" class="bg-white p-4 rounded-lg"></canvas>
@@ -343,11 +348,23 @@
                         <button onclick="downloadQR()" class="glass-button px-6 py-3 rounded-xl font-semibold">
                             <i class="fas fa-download mr-2"></i>下載QR CODE
                         </button>
-                        <div class="text-sm text-gray-400">
-                            <p>分享連結: <span id="shareUrl" class="text-blue-400 break-all"></span></p>
-                        </div>
+                        <button onclick="copyShareLink()" id="copyLinkBtn" class="glass-button px-6 py-3 rounded-xl font-semibold">
+                            <i class="fas fa-copy mr-2"></i>分享連結
+                        </button>
                     </div>
                 </div>
+
+                <!-- 參與者列表 -->
+                <div class="glass-card p-6 mb-6">
+                    <h3 class="text-xl font-semibold mb-4">
+                        <i class="fas fa-users mr-2"></i>
+                        已加入參與者 (<span id="qrParticipantCount">1</span>)
+                    </h3>
+                    <div id="qrParticipantsList" class="space-y-3">
+                        <!-- 參與者將在這裡顯示 -->
+                    </div>
+                </div>
+
                 <div class="text-center">
                     <button onclick="enterRoom()" class="glass-button px-8 py-4 rounded-xl font-semibold text-lg bg-green-600 hover:bg-green-700">
                         <i class="fas fa-door-open mr-2"></i>進入房間
@@ -474,6 +491,7 @@
         let currentPlayer = null;
         let isHost = false;
         let roomRef = null;
+        let qrRoomRef = null;
 
         // 震動反饋函數
         function triggerVibration(pattern) {
@@ -498,6 +516,12 @@
 
         // UI 控制函數
         function showMainMenu() {
+            // 清理QR頁面的監聽器
+            if (qrRoomRef) {
+                qrRoomRef.off();
+                qrRoomRef = null;
+            }
+            
             document.getElementById('mainMenu').classList.remove('hidden');
             document.getElementById('createRoomSection').classList.add('hidden');
             document.getElementById('qrShareSection').classList.add('hidden');
@@ -513,6 +537,9 @@
         function showQRShare() {
             document.getElementById('createRoomSection').classList.add('hidden');
             document.getElementById('qrShareSection').classList.remove('hidden');
+            
+            // 設置QR頁面的參與者監聽器
+            setupQRParticipantsListener();
         }
 
         function showJoinRoom() {
@@ -528,6 +555,12 @@
         }
 
         function showGameSection() {
+            // 清理QR頁面的監聽器
+            if (qrRoomRef) {
+                qrRoomRef.off();
+                qrRoomRef = null;
+            }
+            
             document.getElementById('mainMenu').classList.add('hidden');
             document.getElementById('createRoomSection').classList.add('hidden');
             document.getElementById('qrShareSection').classList.add('hidden');
@@ -544,7 +577,6 @@
         function generateQRCode(roomCode) {
             const canvas = document.getElementById('qrCanvas');
             const shareUrl = `${window.location.origin}${window.location.pathname}?room=${roomCode}`;
-            document.getElementById('shareUrl').textContent = shareUrl;
             
             QRCode.toCanvas(canvas, shareUrl, {
                 width: 200,
@@ -559,6 +591,31 @@
                     console.error('QR CODE生成失敗:', error);
                     alert('QR CODE生成失敗');
                 }
+            });
+        }
+
+        // 複製分享連結
+        function copyShareLink() {
+            const shareUrl = `${window.location.origin}${window.location.pathname}?room=${currentRoom}`;
+            const copyBtn = document.getElementById('copyLinkBtn');
+            
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                // 成功複製的視覺反饋
+                copyBtn.classList.add('copy-success');
+                copyBtn.innerHTML = '<i class="fas fa-check mr-2"></i>已複製！';
+                
+                // 震動反饋
+                triggerVibration(100);
+                
+                // 3秒後恢復原狀
+                setTimeout(() => {
+                    copyBtn.classList.remove('copy-success');
+                    copyBtn.innerHTML = '<i class="fas fa-copy mr-2"></i>分享連結';
+                }, 3000);
+            }).catch(err => {
+                console.error('複製失敗:', err);
+                // 降級方案：顯示連結讓用戶手動複製
+                prompt('請手動複製以下連結：', shareUrl);
             });
         }
 
@@ -610,6 +667,57 @@
             } catch (error) {
                 console.error('創建房間失敗:', error);
                 alert('創建房間失敗，請重試');
+            }
+        }
+
+        // 設置QR頁面的參與者監聽器
+        function setupQRParticipantsListener() {
+            if (qrRoomRef) {
+                qrRoomRef.off();
+            }
+            
+            qrRoomRef = database.ref('buzzer_rooms/' + currentRoom + '/participants');
+            qrRoomRef.on('value', (snapshot) => {
+                if (snapshot.exists()) {
+                    const participants = snapshot.val();
+                    updateQRParticipantsList(participants);
+                }
+            });
+        }
+
+        // 更新QR頁面的參與者列表
+        function updateQRParticipantsList(participants) {
+            const listElement = document.getElementById('qrParticipantsList');
+            const countElement = document.getElementById('qrParticipantCount');
+            
+            listElement.innerHTML = '';
+            
+            if (participants) {
+                const participantArray = Object.values(participants);
+                countElement.textContent = participantArray.length;
+                
+                participantArray.forEach((participant) => {
+                    const div = document.createElement('div');
+                    div.className = 'participant-item flex items-center p-4 rounded-xl';
+                    
+                    div.innerHTML = `
+                        <div class="flex items-center">
+                            ${participant.isHost ? 
+                                '<i class="fas fa-crown text-yellow-400 mr-3 text-lg"></i>' : 
+                                '<i class="fas fa-user text-green-400 mr-3"></i>'
+                            }
+                            <div>
+                                <span class="font-medium text-lg">${participant.name}</span>
+                                <div class="text-sm text-gray-400">
+                                    ${participant.isHost ? '主持人' : '參與者'}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    listElement.appendChild(div);
+                });
+            } else {
+                countElement.textContent = '0';
             }
         }
 
@@ -897,6 +1005,11 @@
                 roomRef = null;
             }
             
+            if (qrRoomRef) {
+                qrRoomRef.off();
+                qrRoomRef = null;
+            }
+            
             if (currentRoom && currentPlayer) {
                 try {
                     await database.ref('buzzer_rooms/' + currentRoom + '/participants/' + currentPlayer).remove();
@@ -937,7 +1050,7 @@
     </script>
 
     <footer class="copyright-footer">
-        <p>Copyright © 2025 陳. All rights reserved.</p>
+        <p>Copyright © 2025 陳冠健. All rights reserved.</p>
     </footer>
     
 </body>
