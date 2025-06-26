@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>多設備線上搶答器</title>
+    <title>線上搶答器</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
@@ -211,31 +211,49 @@
         }
 
         .score-button {
-            min-width: 32px;
+            width: 32px;
             height: 32px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.9rem;
+            font-size: 14px;
             font-weight: bold;
+            transition: all 0.2s ease;
         }
 
-        .score-display {
-            background: rgba(255, 215, 0, 0.2);
-            border: 1px solid rgba(255, 215, 0, 0.3);
+        .score-button:hover {
+            transform: scale(1.1);
         }
 
-        #qrCodeContainer {
+        .add-score {
+            background: rgba(34, 197, 94, 0.2);
+            border: 1px solid rgba(34, 197, 94, 0.4);
+            color: #22c55e;
+        }
+
+        .add-score:hover {
+            background: rgba(34, 197, 94, 0.3);
+        }
+
+        .subtract-score {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #ef4444;
+        }
+
+        .subtract-score:hover {
+            background: rgba(239, 68, 68, 0.3);
+        }
+
+        .qr-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
             background: white;
-            padding: 16px;
-            border-radius: 12px;
-            display: inline-block;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-        }
-
-        .qr-section {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
         }
 
         .copyright-footer {
@@ -259,6 +277,7 @@
                 color: #000000;
             }
         }
+        
     </style>
 </head>
 <body>
@@ -268,7 +287,7 @@
         <header class="text-center mb-12">
             <h1 class="text-4xl font-bold mb-4">
                 <i class="fas fa-bolt text-yellow-400 mr-3"></i>
-                線上搶答器 - 升級版
+                線上搶答器 - 增強版
             </h1>
         </header>
 
@@ -347,32 +366,26 @@
         <!-- 遊戲畫面 -->
         <div id="gameSection" class="hidden space-y-8">
             <!-- 房間信息和QR碼 -->
-            <div class="grid md:grid-cols-2 gap-6">
-                <div class="glass-card p-6">
-                    <div class="flex justify-between items-center">
-                        <div class="status-indicator">
-                            <h3 class="text-xl font-semibold">房間 <span id="currentRoomCode" class="text-2xl font-mono text-green-400"></span></h3>
-                            <p class="text-gray-300 mt-1">
-                                <span id="currentPlayerName" class="font-medium"></span>
-                                <span id="playerRole" class="ml-2 text-sm"></span>
-                            </p>
+            <div class="glass-card p-6">
+                <div class="flex justify-between items-start">
+                    <div class="status-indicator flex-1">
+                        <h3 class="text-xl font-semibold">房間 <span id="currentRoomCode" class="text-2xl font-mono text-green-400"></span></h3>
+                        <p class="text-gray-300 mt-1">
+                            <span id="currentPlayerName" class="font-medium"></span>
+                            <span id="playerRole" class="ml-2 text-sm"></span>
+                        </p>
+                    </div>
+                    <div id="qrCodeSection" class="hidden flex-shrink-0 ml-6">
+                        <div class="text-center">
+                            <div class="qr-container">
+                                <canvas id="qrCanvas" class="mb-3"></canvas>
+                                <p class="text-black text-sm font-medium">掃描加入房間</p>
+                            </div>
                         </div>
-                        <button onclick="leaveRoom()" class="glass-button px-6 py-3 rounded-xl text-red-300 hover:text-red-200">
-                            <i class="fas fa-sign-out-alt mr-2"></i>離開
-                        </button>
                     </div>
-                </div>
-                
-                <!-- QR碼區域 -->
-                <div id="qrSection" class="glass-card p-6 text-center qr-section hidden">
-                    <h4 class="text-lg font-semibold mb-4">
-                        <i class="fas fa-qrcode text-blue-400 mr-2"></i>
-                        掃描加入房間
-                    </h4>
-                    <div id="qrCodeContainer" class="mb-4">
-                        <canvas id="qrCanvas"></canvas>
-                    </div>
-                    <p class="text-sm text-gray-300">其他用戶掃描此QR碼即可快速加入房間</p>
+                    <button onclick="leaveRoom()" class="glass-button px-6 py-3 rounded-xl text-red-300 hover:text-red-200 flex-shrink-0 ml-4">
+                        <i class="fas fa-sign-out-alt mr-2"></i>離開
+                    </button>
                 </div>
             </div>
 
@@ -411,7 +424,7 @@
                 </div>
             </div>
 
-            <!-- 參與者列表和計分 -->
+            <!-- 參與者列表 -->
             <div class="glass-card p-6">
                 <h3 class="text-xl font-semibold mb-4">
                     <i class="fas fa-users mr-2"></i>
@@ -467,6 +480,39 @@
             }
         }
 
+        // 生成QR碼
+        function generateQRCode(roomCode) {
+            const canvas = document.getElementById('qrCanvas');
+            const baseUrl = window.location.origin + window.location.pathname;
+            const joinUrl = `${baseUrl}?room=${roomCode}`;
+            
+            QRCode.toCanvas(canvas, joinUrl, {
+                width: 150,
+                height: 150,
+                margin: 2,
+                color: {
+                    dark: '#000000',
+                    light: '#ffffff'
+                }
+            }, function (error) {
+                if (error) {
+                    console.error('QR碼生成失敗:', error);
+                } else {
+                    document.getElementById('qrCodeSection').classList.remove('hidden');
+                }
+            });
+        }
+
+        // 檢查URL參數自動填入房間號碼
+        function checkUrlParams() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const roomParam = urlParams.get('room');
+            if (roomParam) {
+                document.getElementById('roomCode').value = roomParam;
+                showJoinRoom();
+            }
+        }
+
         // UI 控制函數
         function showMainMenu() {
             document.getElementById('mainMenu').classList.remove('hidden');
@@ -483,13 +529,6 @@
         function showJoinRoom() {
             document.getElementById('mainMenu').classList.add('hidden');
             document.getElementById('joinRoomSection').classList.remove('hidden');
-            
-            // 檢查URL參數是否有房間碼
-            const urlParams = new URLSearchParams(window.location.search);
-            const roomFromUrl = urlParams.get('room');
-            if (roomFromUrl && roomFromUrl.length === 6) {
-                document.getElementById('roomCode').value = roomFromUrl;
-            }
         }
 
         function showGameSection() {
@@ -502,29 +541,6 @@
         // 生成房間代碼
         function generateRoomCode() {
             return Math.floor(100000 + Math.random() * 900000).toString();
-        }
-
-        // 生成QR碼
-        function generateQRCode(roomCode) {
-            const qrCanvas = document.getElementById('qrCanvas');
-            const baseUrl = window.location.origin + window.location.pathname;
-            const joinUrl = `${baseUrl}?room=${roomCode}`;
-            
-            QRCode.toCanvas(qrCanvas, joinUrl, {
-                width: 200,
-                height: 200,
-                margin: 2,
-                color: {
-                    dark: '#000000',
-                    light: '#ffffff'
-                }
-            }, function (error) {
-                if (error) {
-                    console.error('QR碼生成失敗:', error);
-                } else {
-                    document.getElementById('qrSection').classList.remove('hidden');
-                }
-            });
         }
 
         // 創建房間
@@ -647,7 +663,7 @@
                 roleElement.innerHTML = '<i class="fas fa-crown text-yellow-400"></i> 主持人';
                 document.getElementById('hostControls').classList.remove('hidden');
                 // 主持人不顯示搶答按鈕
-                document.getElementById('waitingState').style.display = isHost ? 'none' : 'block';
+                document.getElementById('waitingState').style.display = 'none';
             } else {
                 roleElement.innerHTML = '<i class="fas fa-user text-green-400"></i> 參與者';
                 document.getElementById('hostControls').classList.add('hidden');
@@ -655,22 +671,35 @@
             }
         }
 
-        // 更新分數
-        async function updateScore(playerName, delta) {
+        // 加分功能
+        async function addScore(playerName) {
             if (!isHost || !currentRoom) return;
             
             try {
                 const playerRef = database.ref('buzzer_rooms/' + currentRoom + '/participants/' + playerName + '/score');
                 const snapshot = await playerRef.once('value');
                 const currentScore = snapshot.val() || 0;
-                const newScore = Math.max(0, currentScore + delta); // 分數不能小於0
-                
-                await playerRef.set(newScore);
-                triggerVibration(50); // 操作震動反饋
-                
+                await playerRef.set(currentScore + 1);
+                triggerVibration(100); // 成功震動反饋
             } catch (error) {
-                console.error('更新分數失敗:', error);
-                alert('更新分數失敗，請重試');
+                console.error('加分失敗:', error);
+                alert('加分失敗，請重試');
+            }
+        }
+
+        // 減分功能
+        async function subtractScore(playerName) {
+            if (!isHost || !currentRoom) return;
+            
+            try {
+                const playerRef = database.ref('buzzer_rooms/' + currentRoom + '/participants/' + playerName + '/score');
+                const snapshot = await playerRef.once('value');
+                const currentScore = snapshot.val() || 0;
+                await playerRef.set(Math.max(0, currentScore - 1)); // 不允許負分
+                triggerVibration(100); // 成功震動反饋
+            } catch (error) {
+                console.error('減分失敗:', error);
+                alert('減分失敗，請重試');
             }
         }
 
@@ -685,49 +714,49 @@
                 const participantArray = Object.values(participants);
                 countElement.textContent = participantArray.length;
                 
-                // 按分數排序（分數高的在前）
-                participantArray.sort((a, b) => (b.score || 0) - (a.score || 0));
+                // 按分數排序，主持人總是顯示在最前面
+                participantArray.sort((a, b) => {
+                    if (a.isHost) return -1;
+                    if (b.isHost) return 1;
+                    return (b.score || 0) - (a.score || 0);
+                });
                 
                 participantArray.forEach(participant => {
                     const div = document.createElement('div');
                     div.className = 'participant-item flex items-center justify-between p-4 rounded-xl';
                     
-                    let scoreControls = '';
-                    if (isHost && !participant.isHost) {
-                        scoreControls = `
-                            <div class="flex items-center gap-2">
-                                <button onclick="updateScore('${participant.name}', -1)" class="glass-button score-button rounded-lg text-red-400 hover:text-red-300">
-                                    <i class="fas fa-minus"></i>
-                                </button>
-                                <div class="score-display px-3 py-1 rounded-lg font-bold text-yellow-300 min-w-12 text-center">
-                                    ${participant.score || 0}
-                                </div>
-                                <button onclick="updateScore('${participant.name}', 1)" class="glass-button score-button rounded-lg text-green-400 hover:text-green-300">
-                                    <i class="fas fa-plus"></i>
-                                </button>
-                            </div>
-                        `;
-                    } else if (!participant.isHost) {
-                        scoreControls = `
-                            <div class="score-display px-3 py-1 rounded-lg font-bold text-yellow-300 min-w-12 text-center">
-                                ${participant.score || 0}
-                            </div>
-                        `;
-                    }
-                    
-                    div.innerHTML = `
+                    const leftContent = `
                         <div class="flex items-center">
                             ${participant.isHost ? 
                                 '<i class="fas fa-crown text-yellow-400 mr-3 text-lg"></i>' : 
                                 '<i class="fas fa-user text-green-400 mr-3"></i>'
                             }
                             <span class="font-medium text-lg">${participant.name}</span>
-                            <span class="text-sm text-gray-400 px-3 py-1 rounded-full glass-button ml-3">
+                            ${!participant.isHost ? 
+                                `<span class="ml-3 px-3 py-1 rounded-full bg-blue-500 bg-opacity-20 text-blue-300 text-sm font-semibold">
+                                    ${participant.score || 0} 分
+                                </span>` : ''
+                            }
+                        </div>
+                    `;
+                    
+                    const rightContent = `
+                        <div class="flex items-center space-x-2">
+                            ${isHost && !participant.isHost ? `
+                                <button onclick="addScore('${participant.name}')" class="score-button add-score">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                                <button onclick="subtractScore('${participant.name}')" class="score-button subtract-score">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                            ` : ''}
+                            <span class="text-sm text-gray-400 px-3 py-1 rounded-full glass-button">
                                 ${participant.isHost ? '主持人' : '參與者'}
                             </span>
                         </div>
-                        ${scoreControls}
                     `;
+                    
+                    div.innerHTML = leftContent + rightContent;
                     listElement.appendChild(div);
                 });
             } else {
@@ -861,9 +890,7 @@
             isHost = false;
             
             // 清除URL參數
-            const url = new URL(window.location);
-            url.searchParams.delete('room');
-            window.history.replaceState({}, document.title, url);
+            window.history.replaceState({}, document.title, window.location.pathname);
             
             showMainMenu();
         }
@@ -877,11 +904,12 @@
 
         // 初始化頁面
         createParticles();
+        checkUrlParams(); // 檢查URL參數
         showMainMenu();
     </script>
 
     <footer class="copyright-footer">
-        <p>Copyright © 2025 陳. All rights reserved.</p>
+        <p>Copyright © 2025 陳冠健. All rights reserved.</p>
     </footer>
     
 </body>
