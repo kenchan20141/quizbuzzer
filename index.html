@@ -1,9 +1,11 @@
+
+
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>線上搶答器 - 修訂版</title>
+    <title>線上搶答器</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
@@ -80,14 +82,14 @@
             transform-style: preserve-3d;
         }
 
-        .buzzer-button:hover:not(.buzzer-disabled) {
+        .buzzer-button:hover {
             transform: translateY(-8px) rotateX(15deg);
             box-shadow: 
                 0 20px 40px rgba(255, 107, 107, 0.4),
                 inset 0 0 30px rgba(255, 255, 255, 0.2);
         }
 
-        .buzzer-button:active:not(.buzzer-disabled) {
+        .buzzer-button:active {
             transform: translateY(-4px) rotateX(10deg) scale(0.95);
             box-shadow: 
                 0 10px 20px rgba(255, 107, 107, 0.5),
@@ -141,25 +143,6 @@
             25% { transform: scale(1.05) rotate(-2deg); }
             50% { transform: scale(1.1); }
             75% { transform: scale(1.05) rotate(2deg); }
-        }
-
-        .countdown-display {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 8rem;
-            font-weight: bold;
-            color: #fbbf24;
-            text-shadow: 0 0 20px rgba(251, 191, 36, 0.5);
-            z-index: 10;
-            animation: countdown-pulse 1s ease-in-out;
-        }
-
-        @keyframes countdown-pulse {
-            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
-            50% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
-            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
         }
 
         .participant-item {
@@ -268,37 +251,6 @@
             background: rgba(34, 197, 94, 0.2);
             border-color: rgba(34, 197, 94, 0.4);
             color: #22c55e;
-        }
-
-        .waiting-host-message {
-            background: rgba(251, 191, 36, 0.1);
-            border: 2px solid rgba(251, 191, 36, 0.3);
-            border-radius: 16px;
-            padding: 24px;
-            text-align: center;
-            color: #fbbf24;
-        }
-
-        .start-button {
-            background: linear-gradient(145deg, #10b981, #059669);
-            color: white;
-            font-size: 1.25rem;
-            font-weight: bold;
-            padding: 16px 32px;
-            border-radius: 12px;
-            border: none;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-        }
-
-        .start-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(16, 185, 129, 0.4);
-        }
-
-        .start-button:active {
-            transform: translateY(0);
         }
 
         .copyright-footer {
@@ -471,50 +423,8 @@
 
             <!-- 搶答區域 -->
             <div class="glass-card p-8">
-                <!-- 等待主持人狀態 -->
-                <div id="waitingForHostState" class="text-center">
-                    <div class="waiting-host-message mb-8">
-                        <i class="fas fa-hourglass-half text-4xl mb-4"></i>
-                        <h3 class="text-2xl font-semibold mb-4">等待主持人進入房間</h3>
-                        <p class="text-lg">主持人進入房間後才能開始搶答</p>
-                    </div>
-                    <div class="buzzer-container flex justify-center mb-8">
-                        <div class="relative">
-                            <button class="buzzer-button buzzer-disabled">
-                                <i class="fas fa-lock"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 主持人控制狀態 -->
-                <div id="hostControlState" class="hidden text-center">
-                    <h3 class="text-2xl font-semibold mb-8">主持人控制台</h3>
-                    <div class="mb-8">
-                        <button id="startRoundButton" onclick="startRound()" class="start-button">
-                            <i class="fas fa-play mr-3"></i>開始搶答
-                        </button>
-                    </div>
-                    <p class="text-gray-300 text-lg">點擊開始按鈕啟動新一輪搶答</p>
-                </div>
-
-                <!-- 倒計時狀態 -->
-                <div id="countdownState" class="hidden text-center">
+                <div id="waitingState" class="text-center">
                     <h3 class="text-2xl font-semibold mb-8">準備搶答</h3>
-                    <div class="buzzer-container flex justify-center mb-8">
-                        <div class="relative">
-                            <div id="countdownNumber" class="countdown-display">3</div>
-                            <button class="buzzer-button buzzer-disabled">
-                                <i class="fas fa-hand-paper"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <p class="text-gray-300 text-lg">倒計時結束後開始搶答</p>
-                </div>
-                
-                <!-- 等待搶答狀態 -->
-                <div id="waitingState" class="hidden text-center">
-                    <h3 class="text-2xl font-semibold mb-8">搶答進行中</h3>
                     <div class="buzzer-container flex justify-center mb-8">
                         <div class="relative">
                             <div class="pulse-ring" id="pulseRing"></div>
@@ -526,7 +436,6 @@
                     <p class="text-gray-300 text-lg">點擊按鈕進行搶答</p>
                 </div>
                 
-                <!-- 搶答結果狀態 -->
                 <div id="resultState" class="hidden text-center">
                     <h3 class="text-2xl font-semibold mb-6">搶答結果</h3>
                     <div id="winnerInfo" class="glass-card p-6 mb-6 winner-celebration border-yellow-400 border-2">
@@ -539,9 +448,9 @@
                             時間: <span id="buzzerTime"></span>
                         </div>
                     </div>
-                    <div id="hostNextRoundControls" class="hidden">
-                        <button onclick="startRound()" class="start-button">
-                            <i class="fas fa-redo mr-2"></i>開始下一輪
+                    <div id="hostControls" class="hidden">
+                        <button onclick="resetBuzzer()" class="glass-button px-8 py-4 rounded-xl font-semibold text-lg">
+                            <i class="fas fa-redo mr-2"></i>重新開始
                         </button>
                     </div>
                 </div>
@@ -585,16 +494,6 @@
         let isHost = false;
         let roomRef = null;
         let qrRoomRef = null;
-        let countdownTimer = null;
-
-        // 遊戲狀態常數
-        const GAME_STATES = {
-            WAITING_FOR_HOST: 'waiting_for_host',
-            HOST_CONTROL: 'host_control',
-            COUNTDOWN: 'countdown',
-            ACTIVE: 'active',
-            RESULT: 'result'
-        };
 
         // 震動反饋函數
         function triggerVibration(pattern) {
@@ -619,14 +518,10 @@
 
         // UI 控制函數
         function showMainMenu() {
-            // 清理監聽器和定時器
+            // 清理QR頁面的監聽器
             if (qrRoomRef) {
                 qrRoomRef.off();
                 qrRoomRef = null;
-            }
-            if (countdownTimer) {
-                clearTimeout(countdownTimer);
-                countdownTimer = null;
             }
             
             document.getElementById('mainMenu').classList.remove('hidden');
@@ -744,7 +639,6 @@
                 const roomData = {
                     code: roomCode,
                     host: hostName,
-                    hostInRoom: false,
                     created: firebase.database.ServerValue.TIMESTAMP,
                     participants: {
                         [hostName]: {
@@ -754,7 +648,6 @@
                             joined: firebase.database.ServerValue.TIMESTAMP
                         }
                     },
-                    gameState: GAME_STATES.WAITING_FOR_HOST,
                     buzzer: {
                         active: false,
                         winner: null,
@@ -831,21 +724,10 @@
         }
 
         // 進入房間（從QR分享頁面）
-        async function enterRoom() {
-            try {
-                // 標記主持人已進入房間
-                await database.ref('buzzer_rooms/' + currentRoom).update({
-                    hostInRoom: true,
-                    gameState: GAME_STATES.HOST_CONTROL
-                });
-                
-                setupRoomListener();
-                updateGameUI();
-                showGameSection();
-            } catch (error) {
-                console.error('進入房間失敗:', error);
-                alert('進入房間失敗，請重試');
-            }
+        function enterRoom() {
+            setupRoomListener();
+            updateGameUI();
+            showGameSection();
         }
 
         // 加入房間
@@ -908,7 +790,7 @@
                 if (snapshot.exists()) {
                     const roomData = snapshot.val();
                     updateParticipantsList(roomData.participants);
-                    updateGameState(roomData.gameState, roomData.buzzer);
+                    updateBuzzerState(roomData.buzzer);
                 } else {
                     alert('房間已不存在');
                     leaveRoom();
@@ -924,137 +806,15 @@
             const roleElement = document.getElementById('playerRole');
             if (isHost) {
                 roleElement.innerHTML = '<i class="fas fa-crown text-yellow-400"></i> 主持人';
+                document.getElementById('hostControls').classList.remove('hidden');
                 document.getElementById('scoreboardTitle').classList.remove('hidden');
+                // 主持人不顯示搶答按鈕
+                document.getElementById('waitingState').style.display = 'none';
             } else {
                 roleElement.innerHTML = '<i class="fas fa-user text-green-400"></i> 參與者';
+                document.getElementById('hostControls').classList.add('hidden');
                 document.getElementById('scoreboardTitle').classList.add('hidden');
-            }
-        }
-
-        // 更新遊戲狀態
-        function updateGameState(gameState, buzzerData) {
-            // 隱藏所有狀態
-            document.getElementById('waitingForHostState').classList.add('hidden');
-            document.getElementById('hostControlState').classList.add('hidden');
-            document.getElementById('countdownState').classList.add('hidden');
-            document.getElementById('waitingState').classList.add('hidden');
-            document.getElementById('resultState').classList.add('hidden');
-            
-            switch (gameState) {
-                case GAME_STATES.WAITING_FOR_HOST:
-                    if (!isHost) {
-                        document.getElementById('waitingForHostState').classList.remove('hidden');
-                    } else {
-                        document.getElementById('hostControlState').classList.remove('hidden');
-                    }
-                    break;
-                    
-                case GAME_STATES.HOST_CONTROL:
-                    if (isHost) {
-                        document.getElementById('hostControlState').classList.remove('hidden');
-                    } else {
-                        document.getElementById('waitingForHostState').classList.remove('hidden');
-                    }
-                    break;
-                    
-                case GAME_STATES.COUNTDOWN:
-                    document.getElementById('countdownState').classList.remove('hidden');
-                    break;
-                    
-                case GAME_STATES.ACTIVE:
-                    if (!isHost) {
-                        document.getElementById('waitingState').classList.remove('hidden');
-                    } else {
-                        // 主持人在搶答進行中不顯示搶答按鈕，顯示狀態信息
-                        document.getElementById('waitingState').classList.remove('hidden');
-                        const buzzerButton = document.getElementById('buzzerButton');
-                        buzzerButton.style.display = 'none';
-                    }
-                    break;
-                    
-                case GAME_STATES.RESULT:
-                    document.getElementById('resultState').classList.remove('hidden');
-                    if (buzzerData && buzzerData.winner) {
-                        document.getElementById('winnerName').textContent = buzzerData.winner;
-                        document.getElementById('buzzerTime').textContent = new Date(buzzerData.timestamp).toLocaleTimeString();
-                        
-                        if (isHost) {
-                            document.getElementById('hostNextRoundControls').classList.remove('hidden');
-                        }
-                        
-                        // 給非贏家震動反饋
-                        if (!isHost && buzzerData.winner !== currentPlayer) {
-                            triggerVibration([100, 50, 100]);
-                        }
-                    }
-                    break;
-            }
-        }
-
-        // 開始搶答回合
-        async function startRound() {
-            if (!isHost || !currentRoom) return;
-            
-            try {
-                // 設置為倒計時狀態
-                await database.ref('buzzer_rooms/' + currentRoom).update({
-                    gameState: GAME_STATES.COUNTDOWN,
-                    buzzer: {
-                        active: false,
-                        winner: null,
-                        timestamp: null
-                    }
-                });
-                
-                // 開始倒計時
-                startCountdown();
-                
-            } catch (error) {
-                console.error('開始搶答失敗:', error);
-                alert('開始搶答失敗，請重試');
-            }
-        }
-
-        // 開始倒計時
-        function startCountdown() {
-            let count = 3;
-            const countdownElement = document.getElementById('countdownNumber');
-            
-            function updateCountdown() {
-                countdownElement.textContent = count;
-                countdownElement.style.animation = 'none';
-                // 強制重新觸發動畫
-                setTimeout(() => {
-                    countdownElement.style.animation = 'countdown-pulse 1s ease-in-out';
-                }, 10);
-                
-                count--;
-                
-                if (count >= 0) {
-                    countdownTimer = setTimeout(updateCountdown, 1000);
-                } else {
-                    // 倒計時結束，開始搶答
-                    finishCountdown();
-                }
-            }
-            
-            updateCountdown();
-        }
-
-        // 完成倒計時，開始搶答
-        async function finishCountdown() {
-            if (!isHost || !currentRoom) return;
-            
-            try {
-                await database.ref('buzzer_rooms/' + currentRoom).update({
-                    gameState: GAME_STATES.ACTIVE
-                });
-                
-                // 震動提示搶答開始
-                triggerVibration([50, 50, 50]);
-                
-            } catch (error) {
-                console.error('開始搶答失敗:', error);
+                document.getElementById('waitingState').style.display = 'block';
             }
         }
 
@@ -1139,6 +899,41 @@
             }
         }
 
+        // 更新搶答狀態
+        function updateBuzzerState(buzzerData) {
+            const waitingState = document.getElementById('waitingState');
+            const resultState = document.getElementById('resultState');
+            const buzzerButton = document.getElementById('buzzerButton');
+            const pulseRing = document.getElementById('pulseRing');
+            
+            if (buzzerData && buzzerData.active && buzzerData.winner) {
+                // 有人搶答成功
+                if (!isHost) {
+                    waitingState.classList.add('hidden');
+                    // 如果不是贏家，給予失敗震動反饋
+                    if (buzzerData.winner !== currentPlayer) {
+                        triggerVibration([100, 50, 100]); // 失敗震動：短-停-短
+                    }
+                }
+                resultState.classList.remove('hidden');
+                
+                document.getElementById('winnerName').textContent = buzzerData.winner;
+                document.getElementById('buzzerTime').textContent = new Date(buzzerData.timestamp).toLocaleTimeString();
+                
+                pulseRing.style.display = 'none';
+                
+            } else {
+                // 等待搶答狀態
+                if (!isHost) {
+                    waitingState.classList.remove('hidden');
+                    buzzerButton.classList.remove('buzzer-disabled');
+                    buzzerButton.disabled = false;
+                    pulseRing.style.display = 'block';
+                }
+                resultState.classList.add('hidden');
+            }
+        }
+
         // 搶答功能
         async function buzz() {
             if (!currentRoom || !currentPlayer || isHost) return;
@@ -1147,7 +942,7 @@
             const pulseRing = document.getElementById('pulseRing');
             
             // 立即給予點擊震動反饋
-            triggerVibration(50);
+            triggerVibration(50); // 輕微震動表示按鈕被按下
             
             buzzerButton.classList.add('buzzer-disabled');
             buzzerButton.disabled = true;
@@ -1161,43 +956,52 @@
                 // 檢查是否已有人搶答
                 if (buzzerData && buzzerData.active && buzzerData.winner) {
                     // 搶答失敗 - 別人已經搶到了
-                    triggerVibration([100, 50, 100]);
+                    triggerVibration([100, 50, 100]); // 失敗震動：短-停-短
                     return;
                 }
                 
-                // 記錄搶答並更新遊戲狀態
-                await Promise.all([
-                    buzzerRef.set({
-                        active: true,
-                        winner: currentPlayer,
-                        timestamp: firebase.database.ServerValue.TIMESTAMP
-                    }),
-                    database.ref('buzzer_rooms/' + currentRoom).update({
-                        gameState: GAME_STATES.RESULT
-                    })
-                ]);
+                // 記錄搶答
+                await buzzerRef.set({
+                    active: true,
+                    winner: currentPlayer,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                });
                 
                 // 搶答成功
-                triggerVibration([200, 100, 200, 100, 200]);
+                triggerVibration([200, 100, 200, 100, 200]); // 成功震動：長震動模式
                 
             } catch (error) {
                 console.error('搶答失敗:', error);
                 // 網路錯誤震動反饋
-                triggerVibration([50, 25, 50, 25, 50]);
+                triggerVibration([50, 25, 50, 25, 50]); // 錯誤震動：快速震動
                 buzzerButton.classList.remove('buzzer-disabled');
                 buzzerButton.disabled = false;
                 pulseRing.style.display = 'block';
             }
         }
 
+        // 重置搶答器（僅主持人可用）
+        async function resetBuzzer() {
+            if (!isHost || !currentRoom) return;
+            
+            try {
+                await database.ref('buzzer_rooms/' + currentRoom + '/buzzer').set({
+                    active: false,
+                    winner: null,
+                    timestamp: null
+                });
+                
+                // 重置震動反饋
+                triggerVibration(100); // 單次震動表示重置
+                
+            } catch (error) {
+                console.error('重置失敗:', error);
+                alert('重置失敗，請重試');
+            }
+        }
+
         // 離開房間
         async function leaveRoom() {
-            // 清理定時器和監聽器
-            if (countdownTimer) {
-                clearTimeout(countdownTimer);
-                countdownTimer = null;
-            }
-            
             if (roomRef) {
                 roomRef.off();
                 roomRef = null;
@@ -1232,9 +1036,6 @@
         window.addEventListener('beforeunload', () => {
             if (currentRoom && currentPlayer) {
                 database.ref('buzzer_rooms/' + currentRoom + '/participants/' + currentPlayer).remove();
-            }
-            if (countdownTimer) {
-                clearTimeout(countdownTimer);
             }
         });
 
