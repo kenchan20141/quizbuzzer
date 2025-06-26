@@ -207,23 +207,25 @@
             50% { transform: translateY(-20px) rotate(180deg); opacity: 0.8; }
         }
 
-
- .copyright-footer {
+        .copyright-footer {
             position: fixed;
             bottom: 0;
             right: 0;
             padding: 5px 10px;
             background-color: #f1f1f1;
+            color: #000000;
         }
 
         .copyright-footer p {
             margin: 0;
             font-size: 14px;
+            color: #000000;
         }
 
         @media (max-width: 600px) {
             .copyright-footer p {
                 font-size: 12px;
+                color: #000000;
             }
         }
         
@@ -400,6 +402,13 @@
         let currentPlayer = null;
         let isHost = false;
         let roomRef = null;
+
+        // 震動反饋函數
+        function triggerVibration(pattern) {
+            if ('vibrate' in navigator) {
+                navigator.vibrate(pattern);
+            }
+        }
 
         // 創建浮動粒子效果
         function createParticles() {
@@ -614,6 +623,10 @@
                 // 有人搶答成功
                 if (!isHost) {
                     waitingState.classList.add('hidden');
+                    // 如果不是贏家，給予失敗震動反饋
+                    if (buzzerData.winner !== currentPlayer) {
+                        triggerVibration([100, 50, 100]); // 失敗震動：短-停-短
+                    }
                 }
                 resultState.classList.remove('hidden');
                 
@@ -641,6 +654,9 @@
             const buzzerButton = document.getElementById('buzzerButton');
             const pulseRing = document.getElementById('pulseRing');
             
+            // 立即給予點擊震動反饋
+            triggerVibration(50); // 輕微震動表示按鈕被按下
+            
             buzzerButton.classList.add('buzzer-disabled');
             buzzerButton.disabled = true;
             pulseRing.style.display = 'none';
@@ -652,6 +668,8 @@
                 
                 // 檢查是否已有人搶答
                 if (buzzerData && buzzerData.active && buzzerData.winner) {
+                    // 搶答失敗 - 別人已經搶到了
+                    triggerVibration([100, 50, 100]); // 失敗震動：短-停-短
                     return;
                 }
                 
@@ -662,8 +680,13 @@
                     timestamp: firebase.database.ServerValue.TIMESTAMP
                 });
                 
+                // 搶答成功
+                triggerVibration([200, 100, 200, 100, 200]); // 成功震動：長震動模式
+                
             } catch (error) {
                 console.error('搶答失敗:', error);
+                // 網路錯誤震動反饋
+                triggerVibration([50, 25, 50, 25, 50]); // 錯誤震動：快速震動
                 buzzerButton.classList.remove('buzzer-disabled');
                 buzzerButton.disabled = false;
                 pulseRing.style.display = 'block';
@@ -680,6 +703,10 @@
                     winner: null,
                     timestamp: null
                 });
+                
+                // 重置震動反饋
+                triggerVibration(100); // 單次震動表示重置
+                
             } catch (error) {
                 console.error('重置失敗:', error);
                 alert('重置失敗，請重試');
@@ -725,8 +752,7 @@
         showMainMenu();
     </script>
 
-
-<footer class="copyright-footer">
+    <footer class="copyright-footer">
         <p>Copyright © 2025 陳冠健. All rights reserved.</p>
     </footer>
     
