@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>多設備線上搶答器</title>
+    <title>多設備線上搶答器 - 升級版</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
-    
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/firebase@9.23.0/firebase-app-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/firebase@9.23.0/firebase-database-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
     <style>
         :root {
             --primary-dark: #1a1a2e;
@@ -210,6 +210,64 @@
             50% { transform: translateY(-20px) rotate(180deg); opacity: 0.8; }
         }
 
+        .score-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .score-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .score-btn.plus {
+            background: linear-gradient(145deg, #10b981, #059669);
+            color: white;
+        }
+
+        .score-btn.minus {
+            background: linear-gradient(145deg, #ef4444, #dc2626);
+            color: white;
+        }
+
+        .score-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .score-display {
+            background: linear-gradient(145deg, #8b5cf6, #7c3aed);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 16px;
+            min-width: 50px;
+            text-align: center;
+        }
+
+        .qr-section {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .qr-canvas {
+            margin: 20px auto;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
         .copyright-footer {
             position: fixed;
             bottom: 0;
@@ -217,6 +275,7 @@
             padding: 5px 10px;
             background-color: #f1f1f1;
             color: #000000;
+            z-index: 1000;
         }
 
         .copyright-footer p {
@@ -232,6 +291,11 @@
             }
         }
         
+        @media print {
+            .copyright-footer {
+                display: none;
+            }
+        }
     </style>
 </head>
 <body>
@@ -241,9 +305,9 @@
         <header class="text-center mb-12">
             <h1 class="text-4xl font-bold mb-4">
                 <i class="fas fa-bolt text-yellow-400 mr-3"></i>
-                線上搶答器
+                線上搶答器 - 升級版
             </h1>
-    
+            <p class="text-gray-300">支援計分功能與QR碼房間分享</p>
         </header>
 
         <!-- 主選單 -->
@@ -255,14 +319,14 @@
                         <div class="transform group-hover:scale-110 transition-transform duration-300">
                             <i class="fas fa-crown text-5xl mb-4 text-yellow-400"></i>
                             <div class="text-xl font-semibold mb-2">創建房間</div>
-                            <div class="text-sm text-gray-300">成為主持人</div>
+                            <div class="text-sm text-gray-300">成為主持人，管理計分</div>
                         </div>
                     </button>
                     <button onclick="showJoinRoom()" class="glass-button p-8 rounded-2xl text-center group">
                         <div class="transform group-hover:scale-110 transition-transform duration-300">
                             <i class="fas fa-users text-5xl mb-4 text-green-400"></i>
                             <div class="text-xl font-semibold mb-2">加入房間</div>
-                            <div class="text-sm text-gray-300">參與搶答</div>
+                            <div class="text-sm text-gray-300">參與搶答，獲得分數</div>
                         </div>
                     </button>
                 </div>
@@ -277,7 +341,7 @@
                     創建房間
                 </h2>
                 <div class="text-center space-y-6">
-                    <p class="text-gray-300 text-lg">您將自動成為房間主持人</p>
+                    <p class="text-gray-300 text-lg">您將自動成為房間主持人，可以管理參與者計分</p>
                     <div class="flex gap-4 justify-center">
                         <button onclick="createRoom()" class="glass-button px-8 py-4 rounded-xl font-semibold text-lg">
                             <i class="fas fa-plus mr-2"></i>立即創建
@@ -336,6 +400,19 @@
                 </div>
             </div>
 
+            <!-- QR碼分享區域 (僅主持人可見) -->
+            <div id="qrSection" class="hidden glass-card p-6">
+                <h3 class="text-xl font-semibold mb-4 text-center">
+                    <i class="fas fa-qrcode text-blue-400 mr-2"></i>
+                    房間QR碼
+                </h3>
+                <div class="qr-section">
+                    <p class="text-gray-300 mb-4">分享此QR碼讓其他人快速加入房間</p>
+                    <canvas id="qrCanvas" class="qr-canvas"></canvas>
+                    <p class="text-sm text-gray-400 mt-2">掃描QR碼後只需輸入名稱即可加入</p>
+                </div>
+            </div>
+
             <!-- 搶答區域 -->
             <div class="glass-card p-8">
                 <div id="waitingState" class="text-center">
@@ -363,7 +440,15 @@
                             時間: <span id="buzzerTime"></span>
                         </div>
                     </div>
-                    <div id="hostControls" class="hidden">
+                    <div id="hostControls" class="hidden space-y-4">
+                        <div class="flex gap-4 justify-center">
+                            <button onclick="awardPoint()" class="glass-button px-6 py-3 rounded-xl font-semibold text-green-400">
+                                <i class="fas fa-plus mr-2"></i>答對 (+1分)
+                            </button>
+                            <button onclick="deductPoint()" class="glass-button px-6 py-3 rounded-xl font-semibold text-red-400">
+                                <i class="fas fa-minus mr-2"></i>答錯 (-1分)
+                            </button>
+                        </div>
                         <button onclick="resetBuzzer()" class="glass-button px-8 py-4 rounded-xl font-semibold text-lg">
                             <i class="fas fa-redo mr-2"></i>重新開始
                         </button>
@@ -371,11 +456,11 @@
                 </div>
             </div>
 
-            <!-- 參與者列表 -->
+            <!-- 參與者列表與計分板 -->
             <div class="glass-card p-6">
                 <h3 class="text-xl font-semibold mb-4">
-                    <i class="fas fa-users mr-2"></i>
-                    參與者 (<span id="participantCount">0</span>)
+                    <i class="fas fa-trophy mr-2"></i>
+                    計分板 (<span id="participantCount">0</span>)
                 </h3>
                 <div id="participantsList" class="space-y-3">
                     <!-- 參與者將在這裡顯示 -->
@@ -405,6 +490,7 @@
         let currentPlayer = null;
         let isHost = false;
         let roomRef = null;
+        let currentWinner = null;
 
         // 震動反饋函數
         function triggerVibration(pattern) {
@@ -425,6 +511,37 @@
                 particle.style.animationDuration = (6 + Math.random() * 4) + 's';
                 particlesContainer.appendChild(particle);
             }
+        }
+
+        // 檢查URL參數
+        function checkUrlParams() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const roomCode = urlParams.get('room');
+            if (roomCode) {
+                document.getElementById('roomCode').value = roomCode;
+                showJoinRoom();
+            }
+        }
+
+        // 生成QR碼
+        function generateQRCode(roomCode) {
+            const canvas = document.getElementById('qrCanvas');
+            const url = `${window.location.origin}${window.location.pathname}?room=${roomCode}`;
+            
+            QRCode.toCanvas(canvas, url, {
+                width: 200,
+                margin: 2,
+                color: {
+                    dark: '#000000',
+                    light: '#ffffff'
+                }
+            }, function (error) {
+                if (error) {
+                    console.error('QR碼生成失敗:', error);
+                } else {
+                    document.getElementById('qrSection').classList.remove('hidden');
+                }
+            });
         }
 
         // UI 控制函數
@@ -489,6 +606,7 @@
                 
                 setupRoomListener();
                 updateGameUI();
+                generateQRCode(roomCode);
                 showGameSection();
                 
             } catch (error) {
@@ -528,7 +646,8 @@
                 await database.ref('buzzer_rooms/' + roomCode + '/participants/' + playerName).set({
                     name: playerName,
                     isHost: false,
-                    joined: firebase.database.ServerValue.TIMESTAMP
+                    joined: firebase.database.ServerValue.TIMESTAMP,
+                    score: 0
                 });
 
                 currentRoom = roomCode;
@@ -573,12 +692,13 @@
             if (isHost) {
                 roleElement.innerHTML = '<i class="fas fa-crown text-yellow-400"></i> 主持人';
                 document.getElementById('hostControls').classList.remove('hidden');
-                // 主持人不顯示搶答按鈕
-                document.getElementById('waitingState').style.display = isHost ? 'none' : 'block';
+                document.getElementById('waitingState').style.display = 'none';
+                document.getElementById('qrSection').classList.remove('hidden');
             } else {
                 roleElement.innerHTML = '<i class="fas fa-user text-green-400"></i> 參與者';
                 document.getElementById('hostControls').classList.add('hidden');
                 document.getElementById('waitingState').style.display = 'block';
+                document.getElementById('qrSection').classList.add('hidden');
             }
         }
 
@@ -591,27 +711,82 @@
             
             if (participants) {
                 const participantArray = Object.values(participants);
-                countElement.textContent = participantArray.length;
+                const playerCount = participantArray.filter(p => !p.isHost).length;
+                countElement.textContent = playerCount;
                 
-                participantArray.forEach(participant => {
+                // 按分數排序（主持人除外）
+                const sortedParticipants = participantArray.sort((a, b) => {
+                    if (a.isHost) return -1;
+                    if (b.isHost) return 1;
+                    return (b.score || 0) - (a.score || 0);
+                });
+                
+                sortedParticipants.forEach((participant, index) => {
                     const div = document.createElement('div');
                     div.className = 'participant-item flex items-center justify-between p-4 rounded-xl';
-                    div.innerHTML = `
-                        <div class="flex items-center">
-                            ${participant.isHost ? 
-                                '<i class="fas fa-crown text-yellow-400 mr-3 text-lg"></i>' : 
-                                '<i class="fas fa-user text-green-400 mr-3"></i>'
-                            }
-                            <span class="font-medium text-lg">${participant.name}</span>
-                        </div>
-                        <span class="text-sm text-gray-400 px-3 py-1 rounded-full glass-button">
-                            ${participant.isHost ? '主持人' : '參與者'}
-                        </span>
-                    `;
+                    
+                    if (participant.isHost) {
+                        div.innerHTML = `
+                            <div class="flex items-center">
+                                <i class="fas fa-crown text-yellow-400 mr-3 text-lg"></i>
+                                <span class="font-medium text-lg">${participant.name}</span>
+                            </div>
+                            <span class="text-sm text-gray-400 px-3 py-1 rounded-full glass-button">
+                                主持人
+                            </span>
+                        `;
+                    } else {
+                        const rank = index; // 主持人排第一，所以參與者從index開始就是排名
+                        let rankIcon = '';
+                        if (rank === 1) rankIcon = '🥇';
+                        else if (rank === 2) rankIcon = '🥈';
+                        else if (rank === 3) rankIcon = '🥉';
+                        else rankIcon = `#${rank}`;
+                        
+                        div.innerHTML = `
+                            <div class="flex items-center">
+                                <span class="text-lg mr-3 min-w-8">${rankIcon}</span>
+                                <span class="font-medium text-lg">${participant.name}</span>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="score-display mr-3">${participant.score || 0}</div>
+                                ${isHost ? `
+                                    <div class="score-controls">
+                                        <button class="score-btn minus" onclick="adjustScore('${participant.name}', -1)">
+                                            <i class="fas fa-minus"></i>
+                                        </button>
+                                        <button class="score-btn plus" onclick="adjustScore('${participant.name}', 1)">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        `;
+                    }
                     listElement.appendChild(div);
                 });
             } else {
                 countElement.textContent = '0';
+            }
+        }
+
+        // 調整分數
+        async function adjustScore(playerName, change) {
+            if (!isHost || !currentRoom) return;
+            
+            try {
+                const participantRef = database.ref('buzzer_rooms/' + currentRoom + '/participants/' + playerName);
+                const snapshot = await participantRef.once('value');
+                const participantData = snapshot.val();
+                
+                if (participantData && !participantData.isHost) {
+                    const newScore = Math.max(0, (participantData.score || 0) + change);
+                    await participantRef.update({ score: newScore });
+                    
+                    triggerVibration(50);
+                }
+            } catch (error) {
+                console.error('調整分數失敗:', error);
             }
         }
 
@@ -623,12 +798,12 @@
             const pulseRing = document.getElementById('pulseRing');
             
             if (buzzerData && buzzerData.active && buzzerData.winner) {
-                // 有人搶答成功
+                currentWinner = buzzerData.winner;
+                
                 if (!isHost) {
                     waitingState.classList.add('hidden');
-                    // 如果不是贏家，給予失敗震動反饋
                     if (buzzerData.winner !== currentPlayer) {
-                        triggerVibration([100, 50, 100]); // 失敗震動：短-停-短
+                        triggerVibration([100, 50, 100]);
                     }
                 }
                 resultState.classList.remove('hidden');
@@ -639,7 +814,8 @@
                 pulseRing.style.display = 'none';
                 
             } else {
-                // 等待搶答狀態
+                currentWinner = null;
+                
                 if (!isHost) {
                     waitingState.classList.remove('hidden');
                     buzzerButton.classList.remove('buzzer-disabled');
@@ -657,8 +833,7 @@
             const buzzerButton = document.getElementById('buzzerButton');
             const pulseRing = document.getElementById('pulseRing');
             
-            // 立即給予點擊震動反饋
-            triggerVibration(50); // 輕微震動表示按鈕被按下
+            triggerVibration(50);
             
             buzzerButton.classList.add('buzzer-disabled');
             buzzerButton.disabled = true;
@@ -669,34 +844,45 @@
                 const snapshot = await buzzerRef.once('value');
                 const buzzerData = snapshot.val();
                 
-                // 檢查是否已有人搶答
                 if (buzzerData && buzzerData.active && buzzerData.winner) {
-                    // 搶答失敗 - 別人已經搶到了
-                    triggerVibration([100, 50, 100]); // 失敗震動：短-停-短
+                    triggerVibration([100, 50, 100]);
                     return;
                 }
                 
-                // 記錄搶答
                 await buzzerRef.set({
                     active: true,
                     winner: currentPlayer,
                     timestamp: firebase.database.ServerValue.TIMESTAMP
                 });
                 
-                // 搶答成功
-                triggerVibration([200, 100, 200, 100, 200]); // 成功震動：長震動模式
+                triggerVibration([200, 100, 200, 100, 200]);
                 
             } catch (error) {
                 console.error('搶答失敗:', error);
-                // 網路錯誤震動反饋
-                triggerVibration([50, 25, 50, 25, 50]); // 錯誤震動：快速震動
+                triggerVibration([50, 25, 50, 25, 50]);
                 buzzerButton.classList.remove('buzzer-disabled');
                 buzzerButton.disabled = false;
                 pulseRing.style.display = 'block';
             }
         }
 
-        // 重置搶答器（僅主持人可用）
+        // 答對加分
+        async function awardPoint() {
+            if (currentWinner) {
+                await adjustScore(currentWinner, 1);
+                await resetBuzzer();
+            }
+        }
+
+        // 答錯扣分
+        async function deductPoint() {
+            if (currentWinner) {
+                await adjustScore(currentWinner, -1);
+                await resetBuzzer();
+            }
+        }
+
+        // 重置搶答器
         async function resetBuzzer() {
             if (!isHost || !currentRoom) return;
             
@@ -707,8 +893,7 @@
                     timestamp: null
                 });
                 
-                // 重置震動反饋
-                triggerVibration(100); // 單次震動表示重置
+                triggerVibration(100);
                 
             } catch (error) {
                 console.error('重置失敗:', error);
@@ -727,7 +912,6 @@
                 try {
                     await database.ref('buzzer_rooms/' + currentRoom + '/participants/' + currentPlayer).remove();
                     
-                    // 如果是主持人離開，刪除整個房間
                     if (isHost) {
                         await database.ref('buzzer_rooms/' + currentRoom).remove();
                     }
@@ -739,6 +923,7 @@
             currentRoom = null;
             currentPlayer = null;
             isHost = false;
+            currentWinner = null;
             
             showMainMenu();
         }
@@ -752,6 +937,7 @@
 
         // 初始化頁面
         createParticles();
+        checkUrlParams();
         showMainMenu();
     </script>
 
