@@ -443,29 +443,33 @@
 
             <!-- 搶答區域 (Refactored for Fixed Position) -->
             <div class="glass-card p-8 text-center">
-                <h3 id="buzzerStateTitle" class="text-2xl font-semibold mb-6 min-h-[32px]"></h3>
+                <h3 id="buzzerStateTitle" class="text-2xl font-semibold mb-2 min-h-[32px]"></h3>
 
-                <!-- Countdown Display -->
-                <div id="countdownState" class="hidden">
-                    <div class="countdown-display mb-6" id="countdownNumber">3</div>
-                </div>
+                <!-- ** NEW: Fixed-Height Status Area to prevent layout shift ** -->
+                <div id="statusDisplayArea" class="w-full min-h-[156px] flex items-center justify-center mb-4">
+                    <!-- Countdown Display -->
+                    <div id="countdownState" class="hidden">
+                        <div class="countdown-display" id="countdownNumber">3</div>
+                    </div>
 
-                <!-- Winner Result Display -->
-                <div id="resultState" class="hidden min-h-[148px]">
-                    <div id="winnerInfo" class="glass-card p-6 mb-6 winner-celebration border-yellow-400 border-2">
-                        <div class="text-3xl font-bold text-yellow-400 mb-2">
-                            <i class="fas fa-trophy mr-3"></i>
-                            <span id="winnerName"></span>
-                        </div>
-                        <div class="text-lg text-yellow-300">搶答成功！</div>
-                        <div class="text-sm text-gray-300 mt-2">
-                            時間: <span id="buzzerTime"></span>
+                    <!-- Winner Result Display -->
+                    <div id="resultState" class="hidden w-full max-w-md">
+                        <div id="winnerInfo" class="glass-card p-6 winner-celebration border-yellow-400 border-2">
+                            <div class="text-3xl font-bold text-yellow-400 mb-2">
+                                <i class="fas fa-trophy mr-3"></i>
+                                <span id="winnerName"></span>
+                            </div>
+                            <div class="text-lg text-yellow-300">搶答成功！</div>
+                            <div class="text-sm text-gray-300 mt-2">
+                                時間: <span id="buzzerTime"></span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
+
                 <!-- The Buzzer Button (Permanent) -->
-                <div class="buzzer-container flex justify-center mb-8">
+                <div class="buzzer-container flex justify-center mb-6">
                     <div class="relative">
                         <div class="pulse-ring" id="pulseRing" style="display: none;"></div>
                         <button id="buzzerButton" onclick="buzz()" class="buzzer-button buzzer-disabled">
@@ -477,7 +481,7 @@
                 <p id="buzzerStateText" class="text-gray-300 text-lg min-h-[28px]"></p>
                 
                 <!-- Host Controls (Single, Fixed Button) -->
-                <div id="hostControlsContainer" class="mt-8 min-h-[60px]">
+                <div id="hostControlsContainer" class="mt-6 min-h-[60px]">
                     <button id="hostActionBtn" class="hidden glass-button px-8 py-4 rounded-xl font-semibold text-lg bg-blue-600 hover:bg-blue-700">
                         <i class="fas fa-play mr-2"></i>
                         <span id="hostActionBtnText">開始搶答</span>
@@ -1079,29 +1083,24 @@
             try {
                 const buzzerRef = database.ref('buzzer_rooms/' + currentRoom + '/buzzer');
                 
-                // 使用事務 (Transaction) 進行原子性操作。
-                // 這是防止多個用戶同時搶答時數據被覆蓋（即防止名稱跳動）的關鍵。
-                // 只有第一個成功將 winner 從 null 改為用戶名的操作會被提交。
                 const { committed } = await buzzerRef.transaction(function(buzzerData) {
                     if (buzzerData && buzzerData.active && !buzzerData.winner) {
                         buzzerData.winner = currentPlayer;
                         buzzerData.timestamp = firebase.database.ServerValue.TIMESTAMP;
-                        buzzerData.active = false; // 立即禁用搶答，防止後續操作
-                        return buzzerData; // 返回修改後的數據以提交
+                        buzzerData.active = false;
+                        return buzzerData;
                     } else {
-                        return; // 如果條件不符（已有人搶答或搶答未激活），則中止事務
+                        return; 
                     }
                 });
 
                 if (committed) {
                     triggerVibration([200, 100, 200]);
                 } else {
-                    // Transaction was aborted, likely because someone else was faster
                     triggerVibration([100, 50, 100]);
                 }
             } catch (error) {
                 console.error('搶答失敗，發生錯誤:', error);
-                // In case of error, re-enable the button for the user to try again if appropriate
                 buzzerButton.classList.remove('buzzer-disabled');
                 buzzerButton.disabled = false;
                 pulseRing.style.display = 'block';
