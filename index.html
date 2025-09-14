@@ -445,14 +445,14 @@
             <div class="glass-card p-8 text-center">
                 <h3 id="buzzerStateTitle" class="text-2xl font-semibold mb-2 min-h-[32px]"></h3>
 
-                <!-- ** NEW: Fixed-Height Status Area to prevent layout shift ** -->
-                <div id="statusDisplayArea" class="w-full min-h-[156px] flex items-center justify-center mb-4">
-                    <!-- Countdown Display -->
+                <!-- ** DEFINITIVE FIX: Fixed-height container that is ALWAYS present in the layout ** -->
+                <div id="statusDisplayArea" class="w-full h-40 flex items-center justify-center mb-4">
+                    <!-- Countdown Display (toggled inside the fixed container) -->
                     <div id="countdownState" class="hidden">
                         <div class="countdown-display" id="countdownNumber">3</div>
                     </div>
 
-                    <!-- Winner Result Display -->
+                    <!-- Winner Result Display (toggled inside the fixed container) -->
                     <div id="resultState" class="hidden w-full max-w-md">
                         <div id="winnerInfo" class="glass-card p-6 winner-celebration border-yellow-400 border-2">
                             <div class="text-3xl font-bold text-yellow-400 mb-2">
@@ -467,8 +467,7 @@
                     </div>
                 </div>
 
-
-                <!-- The Buzzer Button (Permanent) -->
+                <!-- The Buzzer Button (Its position is now stable) -->
                 <div class="buzzer-container flex justify-center mb-6">
                     <div class="relative">
                         <div class="pulse-ring" id="pulseRing" style="display: none;"></div>
